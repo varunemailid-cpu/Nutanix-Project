@@ -1,0 +1,19 @@
+{
+  "name": "snake-game",
+  "version": "1.0.0",
+  "description": "A lightweight browser Snake game with testable game logic.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/server.mjs",
+    "test": "node --test"
+  },
+  "keywords": [
+    "snake",
+    "game",
+    "javascript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {}
+}

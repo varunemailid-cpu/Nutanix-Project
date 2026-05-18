@@ -1,0 +1,30 @@
+[
+  {
+    "op": "add",
+    "path": "/spec/predictor/containers/0/startupProbe",
+    "value": {
+      "httpGet": {
+        "path": "/v1/health/ready",
+        "port": 8000
+      },
+      "initialDelaySeconds": 60,
+      "periodSeconds": 20,
+      "timeoutSeconds": 10,
+      "failureThreshold": 60
+    }
+  },
+  {
+    "op": "add",
+    "path": "/spec/predictor/containers/0/readinessProbe",
+    "value": {
+      "httpGet": {
+        "path": "/v1/health/ready",
+        "port": 8000
+      },
+      "initialDelaySeconds": 60,
+      "periodSeconds": 20,
+      "timeoutSeconds": 10,
+      "failureThreshold": 30
+    }
+  }
+]

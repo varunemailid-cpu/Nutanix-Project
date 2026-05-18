@@ -1,0 +1,10 @@
+{
+  "model": "CHANGE_ME_MODEL",
+  "messages": [
+    {
+      "role": "user",
+      "content": "CHANGE_ME_PROMPT"
+    }
+  ],
+  "max_tokens": 32
+}

@@ -1,0 +1,59 @@
+#cloud-config
+hostname: CHANGE_ME_BASTION_HOSTNAME
+manage_etc_hosts: true
+
+users:
+  - name: nkpadmin
+    gecos: NKP Admin
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    plain_text_passwd: CHANGE_ME_TEMP_PASSWORD
+    ssh_authorized_keys:
+      - CHANGE_ME_SSH_PUBLIC_KEY
+
+chpasswd:
+  expire: true
+
+package_update: true
+package_upgrade: true
+packages:
+  - vim
+  - curl
+  - wget
+  - git
+  - jq
+  - unzip
+  - tar
+  - net-tools
+  - tcpdump
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - bash-completion
+  - openssl
+
+# Uncomment and adjust for static IP on Ubuntu netplan.
+# write_files:
+#   - path: /etc/netplan/50-cloud-init.yaml
+#     permissions: "0644"
+#     content: |
+#       network:
+#         version: 2
+#         ethernets:
+#           ens3:
+#             dhcp4: false
+#             addresses:
+#               - CHANGE_ME_IP/CIDR
+#             gateway4: CHANGE_ME_GATEWAY
+#             nameservers:
+#               addresses:
+#                 - CHANGE_ME_DNS_1
+#                 - CHANGE_ME_DNS_2
+
+runcmd:
+  - [ bash, -lc, "timedatectl set-ntp true" ]
+  - [ bash, -lc, "echo 'NKP bastion cloud-init complete' > /etc/motd" ]
+
+final_message: "NKP bastion cloud-init finished after $UPTIME seconds"

@@ -1,0 +1,17 @@
+.DS_Store
+node_modules/
+coverage/
+dist/
+.env
+.env.*
+npm-debug.log*
+
+# Deployment kit local state
+**/config/env_variables.sh
+**/config/env_nai.sh
+**/certs/*
+!**/certs/.gitkeep
+**/kubeconfigs/*
+!**/kubeconfigs/.gitkeep
+**/logs/*
+!**/logs/.gitkeep
