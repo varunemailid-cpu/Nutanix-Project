@@ -13,6 +13,8 @@ fi
 # shellcheck source=/dev/null
 source "${ENV_FILE}"
 
+# The block is single-quoted so host variables expand on the machine doing the check.
+# shellcheck disable=SC2016
 check_block='
 set +e
 for host in "$@"; do

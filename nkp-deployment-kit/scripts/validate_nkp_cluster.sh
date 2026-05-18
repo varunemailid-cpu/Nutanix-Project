@@ -23,6 +23,8 @@ kubectl get ingress -A || true
 
 if command -v nkp >/dev/null 2>&1; then
   nkp get clusters || true
-  [[ -n "${CLUSTER_NAME:-}" ]] && nkp describe cluster "${CLUSTER_NAME}" || true
+  if [[ -n "${CLUSTER_NAME:-}" ]]; then
+    nkp describe cluster "${CLUSTER_NAME}" || true
+  fi
   nkp get dashboard || true
 fi

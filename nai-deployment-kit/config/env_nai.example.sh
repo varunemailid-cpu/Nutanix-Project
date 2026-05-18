@@ -27,9 +27,11 @@ export CURL_IMAGE="curlimages/curl:8.14.1"
 
 # GPU node SSH targets for egress checks.
 # Example: GPU_NODE_SSH_TARGETS=("konvoy@10.0.0.11" "konvoy@10.0.0.12")
+# shellcheck disable=SC2034
 GPU_NODE_SSH_TARGETS=()
 
 # Network targets often needed by NAI / NIM / Hugging Face workflows.
+# shellcheck disable=SC2034
 EGRESS_HOSTS=(
   "huggingface.co"
   "cdn-lfs.huggingface.co"
