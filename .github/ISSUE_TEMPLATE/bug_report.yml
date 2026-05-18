@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a problem in a runbook, script, template, or workflow.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Do not paste real credentials, kubeconfigs, certificates, tokens, customer IP plans, or private URLs.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - NKP deployment kit
+        - NAI deployment kit
+        - GitHub workflow
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is broken or confusing?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Paste sanitized logs or commands. Replace sensitive values with placeholders.
+      render: shell
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: NKP/NAI version, OS, AHV/Prism details, and other relevant versions.

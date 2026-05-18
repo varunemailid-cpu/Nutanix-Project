@@ -1,0 +1,41 @@
+name: Runbook improvement
+description: Suggest an improvement to a deployment or troubleshooting runbook.
+title: "[Runbook]: "
+labels:
+  - documentation
+  - runbook
+body:
+  - type: dropdown
+    id: runbook
+    attributes:
+      label: Runbook area
+      options:
+        - NKP bastion prep
+        - NKP AHV management cluster
+        - NKP validation
+        - NAI access
+        - NAI model download monitoring
+        - GPT-OSS / NVIDIA NIM troubleshooting
+        - Network and TLS checks
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current gap
+      description: What is missing, outdated, or unclear?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: What should be added or changed?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized supporting notes
+      description: Add sanitized field notes, command output, or screenshots references.

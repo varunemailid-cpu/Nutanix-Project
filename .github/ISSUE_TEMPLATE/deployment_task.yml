@@ -1,0 +1,45 @@
+name: Deployment task
+description: Track a planned NKP or NAI deployment activity.
+title: "[Deployment]: "
+labels:
+  - deployment
+  - task
+body:
+  - type: markdown
+    attributes:
+      value: Use sanitized values only. Do not include passwords, tokens, kubeconfigs, certificates, or customer-sensitive IP plans.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - NKP management cluster
+        - NKP workload cluster
+        - NAI workload cluster
+        - NAI model endpoint
+        - GPU / NVIDIA NIM
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What needs to be delivered?
+    validations:
+      required: true
+  - type: textarea
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: List required access, bundles, images, network approvals, or customer inputs.
+  - type: textarea
+    id: validation
+    attributes:
+      label: Acceptance criteria
+      description: What checks prove the task is complete?
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks or blockers
+      description: List known risks, pending inputs, or escalation points.
