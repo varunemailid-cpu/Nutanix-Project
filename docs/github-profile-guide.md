@@ -13,6 +13,18 @@ Suggested sections:
 - Current learning or workstream
 - Contact or collaboration note
 
+## Create the Profile README Repository
+
+Create a public repository named exactly:
+
+```text
+varunemailid-cpu
+```
+
+GitHub displays the `README.md` from `varunemailid-cpu/varunemailid-cpu` at the top of the profile landing page.
+
+Use [profile-readme-template.md](profile-readme-template.md) as the first version of that README.
+
 ## Example Headline
 
 ```md
@@ -42,6 +54,14 @@ Pin repositories that show:
 
 This `Nutanix-Project` repository is a strong pinned candidate once the first release is tagged.
 
+Recommended first pin:
+
+- `Nutanix-Project`
+
+Recommended cleanup:
+
+- Hide, delete, or make private the empty `new` repository unless it has a clear purpose.
+
 ## Repository Topics
 
 Recommended topics for this repo:
@@ -60,3 +80,10 @@ runbooks
 automation
 infrastructure
 ```
+
+## Recommended Profile Fields
+
+- Name: `Varun Selvaraj`
+- Bio: `Nutanix | Kubernetes | NKP | NAI | GPU AI Platform Operations`
+- Location: `Dubai, UAE` if you want it public
+- Website: LinkedIn or portfolio URL if available

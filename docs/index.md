@@ -9,6 +9,7 @@ This hub organizes the repository for fast field use.
 - [Roadmap](roadmap.md): Planned improvements.
 - [Release Process](release-process.md): How to version and publish changes.
 - [GitHub Profile Guide](github-profile-guide.md): Suggested improvements for a professional GitHub profile.
+- [Profile README Template](profile-readme-template.md): Ready-to-use landing page content for the GitHub profile.
 
 ## Deployment Kits
 

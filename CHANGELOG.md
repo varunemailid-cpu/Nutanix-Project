@@ -8,6 +8,7 @@ All notable changes to this repository are documented here.
 
 - Professional repository README with badges, quick start, safety rules, and structure.
 - Documentation hub with architecture, operating model, roadmap, release process, and GitHub profile guidance.
+- Ready-to-use GitHub profile README template.
 - Contribution, security, code of conduct, license, CODEOWNERS, issue templates, and pull request template.
 - Repository validation script and GitHub quality workflow.
 
