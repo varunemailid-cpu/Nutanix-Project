@@ -71,6 +71,13 @@
         file_type: file
       register: docker_deb_files
 
+    - name: Find offline Ubuntu base packages
+      ansible.builtin.find:
+        paths: "{{ artifact_root }}/base-debs"
+        patterns: "*.deb"
+        file_type: file
+      register: base_deb_files
+
     - name: Check offline kubectl artifact
       ansible.builtin.stat:
         path: "{{ artifact_root }}/tools/kubectl-linux-amd64"
@@ -82,12 +89,13 @@
           - nkp_cli_files.matched == 1
           - ubuntu_image_files.matched == 1
           - deployment_mode == 'connected' or airgap_bundle_files.matched == 1
+          - deployment_mode == 'connected' or base_deb_files.matched > 0
           - deployment_mode == 'connected' or docker_deb_files.matched > 0
           - deployment_mode == 'connected' or offline_kubectl.stat.exists
         fail_msg: >-
           Expected exactly one NKP CLI archive and one unrenamed Ubuntu 24.04/Kubernetes 1.35
           QCOW2 image. Air-gapped mode also requires exactly one complete air-gapped bundle,
-          offline Docker DEB packages, and a kubectl 1.35 AMD64 binary.
+          offline Ubuntu and Docker DEB packages, and a kubectl 1.35 AMD64 binary.
 
     - name: Set resolved artifact facts
       ansible.builtin.set_fact:
@@ -304,9 +312,21 @@
             state: present
             update_cache: true
 
-    - name: Install offline Docker packages when Docker is absent
+    - name: Install offline bastion packages
       when: deployment_mode == 'airgapped'
       block:
+        - name: Copy offline Ubuntu base packages
+          ansible.builtin.copy:
+            src: "{{ artifact_root }}/base-debs/"
+            dest: /tmp/nkp-base-debs/
+            mode: preserve
+
+        - name: Install offline Ubuntu base packages
+          become: true
+          ansible.builtin.shell: "apt-get install -y --no-download /tmp/nkp-base-debs/*.deb"
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+
         - name: Check Docker
           ansible.builtin.command: docker version --format {% raw %}'{{.Server.Version}}'{% endraw %}
           register: offline_docker
@@ -322,7 +342,9 @@
 
         - name: Install offline Docker packages
           become: true
-          ansible.builtin.shell: "apt-get install -y /tmp/nkp-docker-debs/*.deb"
+          ansible.builtin.shell: "apt-get install -y --no-download /tmp/nkp-docker-debs/*.deb"
+          environment:
+            DEBIAN_FRONTEND: noninteractive
           when: offline_docker.rc != 0
 
         - name: Copy offline kubectl 1.35 binary
