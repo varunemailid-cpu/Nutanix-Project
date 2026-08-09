@@ -1,0 +1,534 @@
+---
+- name: Validate inputs and prepare local artifacts
+  hosts: localhost
+  gather_facts: true
+  vars_files:
+    - ../config/vars.yml
+    - ../config/secrets.yml
+  tasks:
+    - name: Validate deployment mode
+      ansible.builtin.assert:
+        that:
+          - deployment_mode in ['connected', 'airgapped']
+          - pc_user | length > 0
+          - pc_password | length > 0
+          - control_plane_replicas | int >= 1
+          - worker_replicas | int >= 1
+          - control_plane_vcpus | int >= 4
+          - control_plane_memory_gib | int >= 12
+          - worker_vcpus | int >= 8
+          - worker_memory_gib | int >= 12
+        fail_msg: "Invalid NKP configuration; review config/vars.yml and config/secrets.yml."
+
+    - name: Warn when non-production replica counts are selected
+      ansible.builtin.debug:
+        msg: "WARNING: NKP production guidance requires at least 3 control-plane and 4 worker nodes."
+      when: control_plane_replicas | int < 3 or worker_replicas | int < 4
+
+    - name: Create local runtime directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0700"
+      loop:
+        - "{{ playbook_dir }}/../state/ssh"
+        - "{{ playbook_dir }}/../state/rendered"
+
+    - name: Generate the controller-to-bastion SSH key
+      community.crypto.openssh_keypair:
+        path: "{{ bastion_ssh_private_key }}"
+        type: ed25519
+        state: present
+        force: false
+        mode: "0600"
+      register: bastion_key
+
+    - name: Find local NKP CLI archive
+      ansible.builtin.find:
+        paths: "{{ artifact_root }}/nkp-cli"
+        patterns: "{{ nkp_cli_pattern }}"
+        file_type: file
+      register: nkp_cli_files
+
+    - name: Find local Nutanix Ubuntu image
+      ansible.builtin.find:
+        paths: "{{ artifact_root }}/os-images"
+        patterns: "{{ ubuntu_image_pattern }}"
+        file_type: file
+      register: ubuntu_image_files
+
+    - name: Find air-gapped bundle
+      ansible.builtin.find:
+        paths: "{{ artifact_root }}/air-gapped-bundle"
+        patterns: "{{ airgap_bundle_pattern }}"
+        file_type: file
+      register: airgap_bundle_files
+
+    - name: Find offline Docker packages
+      ansible.builtin.find:
+        paths: "{{ artifact_root }}/docker-debs"
+        patterns: "*.deb"
+        file_type: file
+      register: docker_deb_files
+
+    - name: Check offline kubectl artifact
+      ansible.builtin.stat:
+        path: "{{ artifact_root }}/tools/kubectl-linux-amd64"
+      register: offline_kubectl
+
+    - name: Validate required artifact counts
+      ansible.builtin.assert:
+        that:
+          - nkp_cli_files.matched == 1
+          - ubuntu_image_files.matched == 1
+          - deployment_mode == 'connected' or airgap_bundle_files.matched == 1
+          - deployment_mode == 'connected' or docker_deb_files.matched > 0
+          - deployment_mode == 'connected' or offline_kubectl.stat.exists
+        fail_msg: >-
+          Expected exactly one NKP CLI archive and one unrenamed Ubuntu 24.04/Kubernetes 1.35
+          QCOW2 image. Air-gapped mode also requires exactly one complete air-gapped bundle,
+          offline Docker DEB packages, and a kubectl 1.35 AMD64 binary.
+
+    - name: Set resolved artifact facts
+      ansible.builtin.set_fact:
+        nkp_cli_archive: "{{ nkp_cli_files.files[0].path }}"
+        ubuntu_image_path: "{{ ubuntu_image_files.files[0].path }}"
+        ubuntu_image_name: "{{ ubuntu_image_files.files[0].path | basename }}"
+        airgap_bundle_path: "{{ (airgap_bundle_files.files | first).path if airgap_bundle_files.matched == 1 else '' }}"
+        bastion_public_key: "{{ bastion_key.public_key }}"
+
+    - name: Render bastion cloud-init
+      ansible.builtin.template:
+        src: ../templates/cloud-init-ubuntu.yml.j2
+        dest: "{{ playbook_dir }}/../state/rendered/cloud-init-ubuntu.yml"
+        mode: "0600"
+
+    - name: Check whether the NKP image already exists
+      nutanix.ncp.ntnx_images_info:
+        nutanix_host: "{{ pc_host }}"
+        nutanix_username: "{{ pc_user }}"
+        nutanix_password: "{{ pc_password }}"
+        nutanix_port: "{{ pc_port }}"
+        validate_certs: "{{ validate_certs }}"
+        filter:
+          name: "{{ ubuntu_image_name }}"
+      register: existing_image
+      no_log: true
+
+    - name: Upload the local NKP Ubuntu image to Prism Central
+      nutanix.ncp.ntnx_images:
+        nutanix_host: "{{ pc_host }}"
+        nutanix_username: "{{ pc_user }}"
+        nutanix_password: "{{ pc_password }}"
+        nutanix_port: "{{ pc_port }}"
+        validate_certs: "{{ validate_certs }}"
+        state: present
+        name: "{{ ubuntu_image_name }}"
+        source_path: "{{ ubuntu_image_path }}"
+        image_type: DISK_IMAGE
+        wait: true
+        timeout: 3600
+      when: existing_image.response.entities | default([]) | length == 0
+      no_log: true
+
+    - name: Find bastion VM by name
+      nutanix.ncp.ntnx_vms_info:
+        nutanix_host: "{{ pc_host }}"
+        nutanix_username: "{{ pc_user }}"
+        nutanix_password: "{{ pc_password }}"
+        nutanix_port: "{{ pc_port }}"
+        validate_certs: "{{ validate_certs }}"
+        filter:
+          vm_name: "{{ bastion_name }}"
+      register: existing_bastion
+      no_log: true
+
+    - name: Create bastion VM
+      nutanix.ncp.ntnx_vms:
+        nutanix_host: "{{ pc_host }}"
+        nutanix_username: "{{ pc_user }}"
+        nutanix_password: "{{ pc_password }}"
+        nutanix_port: "{{ pc_port }}"
+        validate_certs: "{{ validate_certs }}"
+        state: present
+        name: "{{ bastion_name }}"
+        cluster:
+          name: "{{ pe_cluster }}"
+        vcpus: "{{ bastion_vcpus }}"
+        memory_gb: "{{ bastion_memory_gib }}"
+        disks:
+          - type: DISK
+            size_gb: "{{ bastion_disk_gib }}"
+            bus: SCSI
+            clone_image:
+              name: "{{ ubuntu_image_name }}"
+        networks:
+          - is_connected: true
+            subnet:
+              name: "{{ subnet }}"
+        guest_customization:
+          type: cloud_init
+          script_path: "{{ playbook_dir }}/../state/rendered/cloud-init-ubuntu.yml"
+          is_overridable: true
+      when: existing_bastion.response.entities | default([]) | length == 0
+      register: created_bastion
+      no_log: true
+
+    - name: Refresh bastion lookup until it has an IPv4 address
+      nutanix.ncp.ntnx_vms_info:
+        nutanix_host: "{{ pc_host }}"
+        nutanix_username: "{{ pc_user }}"
+        nutanix_password: "{{ pc_password }}"
+        nutanix_port: "{{ pc_port }}"
+        validate_certs: "{{ validate_certs }}"
+        filter:
+          vm_name: "{{ bastion_name }}"
+      register: bastion_lookup
+      until: >-
+        bastion_lookup.response.entities | default([]) | length == 1 and
+        bastion_lookup.response.entities[0].status.resources.nic_list | default([]) |
+        selectattr('ip_endpoint_list', 'defined') | list | length > 0
+      retries: 40
+      delay: 15
+      no_log: true
+
+    - name: Resolve bastion IPv4 address
+      ansible.builtin.set_fact:
+        bastion_ip: >-
+          {{ bastion_lookup.response.entities[0].status.resources.nic_list |
+             map(attribute='ip_endpoint_list') | flatten |
+             selectattr('ip', 'defined') | map(attribute='ip') |
+             reject('equalto', '127.0.0.1') | first }}
+
+    - name: Wait for bastion SSH
+      ansible.builtin.wait_for:
+        host: "{{ bastion_ip }}"
+        port: 22
+        timeout: 600
+        delay: 10
+
+    - name: Trust the bastion SSH host key
+      ansible.builtin.known_hosts:
+        name: "{{ bastion_ip }}"
+        key: "{{ lookup('pipe', 'ssh-keyscan -H ' + bastion_ip) }}"
+        state: present
+
+    - name: Add bastion to runtime inventory
+      ansible.builtin.add_host:
+        name: nkp_bastion
+        groups: nkp_bastion_group
+        ansible_host: "{{ bastion_ip }}"
+        ansible_user: "{{ bastion_user }}"
+        ansible_ssh_private_key_file: "{{ bastion_ssh_private_key }}"
+        nkp_cli_archive: "{{ nkp_cli_archive }}"
+        airgap_bundle_path: "{{ airgap_bundle_path }}"
+        ubuntu_image_name: "{{ ubuntu_image_name }}"
+
+- name: Prepare bastion and create NKP management cluster
+  hosts: nkp_bastion_group
+  gather_facts: true
+  vars_files:
+    - ../config/vars.yml
+    - ../config/secrets.yml
+  tasks:
+    - name: Check cgroups v2 controller file
+      ansible.builtin.stat:
+        path: /sys/fs/cgroup/cgroup.controllers
+      register: cgroups_v2
+
+    - name: Assert Ubuntu and cgroups v2
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == 'Ubuntu'
+          - ansible_architecture in ['x86_64', 'amd64']
+          - cgroups_v2.stat.exists
+        fail_msg: "NKP 2.18 operator host must be x86_64 Ubuntu with cgroups v2."
+
+    - name: Install connected-mode prerequisites
+      when: deployment_mode == 'connected'
+      become: true
+      block:
+        - name: Install base packages
+          ansible.builtin.apt:
+            name: [ca-certificates, curl, gnupg, tar, unzip]
+            state: present
+            update_cache: true
+
+        - name: Create apt keyring directory
+          ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: "0755"
+
+        - name: Install Docker signing key
+          ansible.builtin.get_url:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            dest: /etc/apt/keyrings/docker.asc
+            mode: "0644"
+
+        - name: Configure Docker repository
+          ansible.builtin.apt_repository:
+            repo: >-
+              deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}
+              signed-by=/etc/apt/keyrings/docker.asc]
+              https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+            filename: docker
+            state: present
+
+        - name: Install Docker engine
+          ansible.builtin.apt:
+            name: [docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin]
+            state: present
+            update_cache: true
+
+        - name: Configure Kubernetes 1.35 repository signing key
+          ansible.builtin.shell: >-
+            set -o pipefail && curl -fsSL
+            https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key |
+            gpg --dearmor --yes -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+          args:
+            executable: /bin/bash
+            creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+        - name: Configure Kubernetes 1.35 repository
+          ansible.builtin.apt_repository:
+            repo: >-
+              deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg]
+              https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /
+            filename: kubernetes
+            state: present
+
+        - name: Install kubectl 1.35
+          ansible.builtin.apt:
+            name: kubectl
+            state: present
+            update_cache: true
+
+    - name: Install offline Docker packages when Docker is absent
+      when: deployment_mode == 'airgapped'
+      block:
+        - name: Check Docker
+          ansible.builtin.command: docker version --format {% raw %}'{{.Server.Version}}'{% endraw %}
+          register: offline_docker
+          changed_when: false
+          failed_when: false
+
+        - name: Copy offline Docker packages
+          ansible.builtin.copy:
+            src: "{{ artifact_root }}/docker-debs/"
+            dest: /tmp/nkp-docker-debs/
+            mode: preserve
+          when: offline_docker.rc != 0
+
+        - name: Install offline Docker packages
+          become: true
+          ansible.builtin.shell: "apt-get install -y /tmp/nkp-docker-debs/*.deb"
+          when: offline_docker.rc != 0
+
+        - name: Copy offline kubectl 1.35 binary
+          become: true
+          ansible.builtin.copy:
+            src: "{{ artifact_root }}/tools/kubectl-linux-amd64"
+            dest: /usr/local/bin/kubectl
+            mode: "0755"
+
+    - name: Enable Docker and authorize bastion user
+      become: true
+      block:
+        - name: Start and enable Docker
+          ansible.builtin.systemd_service:
+            name: docker
+            state: started
+            enabled: true
+        - name: Add bastion user to Docker group
+          ansible.builtin.user:
+            name: "{{ bastion_user }}"
+            groups: docker
+            append: true
+
+    - name: Reset connection for Docker group membership
+      ansible.builtin.meta: reset_connection
+
+    - name: Verify required tool versions
+      block:
+        - name: Read Docker version
+          ansible.builtin.command: docker version --format {% raw %}'{{.Server.Version}}'{% endraw %}
+          register: docker_version
+          changed_when: false
+        - name: Read kubectl version
+          ansible.builtin.command: kubectl version --client -o json
+          register: kubectl_version
+          changed_when: false
+        - name: Enforce Docker 27.4+ and kubectl 1.35
+          ansible.builtin.assert:
+            that:
+              - docker_version.stdout is version('27.4.0', '>=')
+              - (kubectl_version.stdout | from_json).clientVersion.gitVersion is match('^v1\\.35\\.')
+
+    - name: Copy NKP CLI archive to bastion
+      ansible.builtin.copy:
+        src: "{{ nkp_cli_archive }}"
+        dest: "/tmp/{{ nkp_cli_archive | basename }}"
+        mode: "0600"
+
+    - name: Extract NKP CLI
+      block:
+        - name: Create NKP extraction directory
+          ansible.builtin.file:
+            path: /tmp/nkp-cli
+            state: directory
+            mode: "0750"
+        - name: Extract archive
+          ansible.builtin.unarchive:
+            src: "/tmp/{{ nkp_cli_archive | basename }}"
+            dest: /tmp/nkp-cli
+            remote_src: true
+            creates: /tmp/nkp-cli/nkp
+
+    - name: Locate extracted NKP binary
+      ansible.builtin.find:
+        paths: /tmp/nkp-cli
+        patterns: nkp
+        file_type: file
+        recurse: true
+      register: nkp_binary
+
+    - name: Assert one NKP binary was extracted
+      ansible.builtin.assert:
+        that: nkp_binary.matched == 1
+
+    - name: Install NKP binary
+      become: true
+      ansible.builtin.copy:
+        src: "{{ nkp_binary.files[0].path }}"
+        dest: /usr/local/bin/nkp
+        remote_src: true
+        mode: "0755"
+
+    - name: Verify NKP version
+      ansible.builtin.command: nkp version
+      register: nkp_version
+      changed_when: false
+      failed_when: nkp_version.rc != 0 or '2.18' not in nkp_version.stdout
+
+    - name: Generate cluster-node SSH identity on bastion
+      community.crypto.openssh_keypair:
+        path: "/home/{{ bastion_user }}/.ssh/nkp_nodes_ed25519"
+        type: ed25519
+        owner: "{{ bastion_user }}"
+        group: "{{ bastion_user }}"
+        mode: "0600"
+        state: present
+        force: false
+
+    - name: Copy and extract complete air-gapped bundle
+      when: deployment_mode == 'airgapped'
+      block:
+        - name: Copy air-gapped bundle
+          ansible.builtin.copy:
+            src: "{{ airgap_bundle_path }}"
+            dest: "/opt/{{ airgap_bundle_path | basename }}"
+            mode: "0600"
+          become: true
+        - name: Create bundle directory
+          ansible.builtin.file:
+            path: /opt/nkp-airgap
+            state: directory
+            owner: "{{ bastion_user }}"
+            group: "{{ bastion_user }}"
+            mode: "0750"
+          become: true
+        - name: Extract air-gapped bundle
+          ansible.builtin.unarchive:
+            src: "/opt/{{ airgap_bundle_path | basename }}"
+            dest: /opt/nkp-airgap
+            remote_src: true
+            owner: "{{ bastion_user }}"
+            group: "{{ bastion_user }}"
+            creates: /opt/nkp-airgap/.extracted
+          become: true
+        - name: Mark air-gapped bundle extracted
+          ansible.builtin.file:
+            path: /opt/nkp-airgap/.extracted
+            state: touch
+            owner: "{{ bastion_user }}"
+            group: "{{ bastion_user }}"
+            mode: "0640"
+          become: true
+        - name: Locate required cluster image bundles
+          ansible.builtin.find:
+            paths: /opt/nkp-airgap
+            patterns:
+              - "konvoy-image-bundle-*.tar"
+              - "kommander-image-bundle-*.tar"
+            recurse: true
+            file_type: file
+          register: cluster_bundles
+        - name: Assert both required image bundles exist
+          ansible.builtin.assert:
+            that: cluster_bundles.matched >= 2
+
+    - name: Build NKP cluster command
+      ansible.builtin.set_fact:
+        nkp_cluster_argv: >-
+          {{
+            ['nkp', 'create', 'cluster', 'nutanix',
+             '--self-managed',
+             '--airgapped=' + ('true' if deployment_mode == 'airgapped' else 'false'),
+             '--cluster-name=' + cluster_name,
+             '--endpoint=https://' + pc_host + ':' + (pc_port | string),
+             '--control-plane-endpoint-ip=' + control_plane_vip,
+             '--csi-storage-container=' + storage_container,
+             '--kubernetes-pod-network-cidr=' + pod_cidr,
+             '--kubernetes-service-cidr=' + service_cidr,
+             '--kubernetes-service-load-balancer-ip-range=' + service_lb_range,
+             '--control-plane-prism-element-cluster=' + pe_cluster,
+             '--control-plane-subnets=' + subnet,
+             '--control-plane-vm-image=' + ubuntu_image_name,
+             '--control-plane-replicas=' + (control_plane_replicas | string),
+             '--control-plane-vcpus=' + (control_plane_vcpus | string),
+             '--control-plane-memory=' + (control_plane_memory_gib | string),
+             '--worker-prism-element-cluster=' + pe_cluster,
+             '--worker-subnets=' + subnet,
+             '--worker-vm-image=' + ubuntu_image_name,
+             '--worker-replicas=' + (worker_replicas | string),
+             '--worker-vcpus=' + (worker_vcpus | string),
+             '--worker-memory=' + (worker_memory_gib | string),
+             '--ssh-username=' + ssh_username_for_nodes,
+             '--ssh-public-key-file=/home/' + bastion_user + '/.ssh/nkp_nodes_ed25519.pub',
+             '--kubeconfig=/home/' + bastion_user + '/' + cluster_name + '.conf']
+            + (['--insecure=true'] if allow_insecure_prism else [])
+            + (['--additional-trust-bundle=' + pc_additional_trust_bundle_b64] if pc_additional_trust_bundle_b64 | length > 0 else [])
+            + (['--control-plane-external-endpoint=' + control_plane_external_endpoint] if control_plane_external_endpoint | length > 0 else [])
+            + (['--ntp-servers=' + (ntp_servers | join(','))] if ntp_servers | length > 0 else [])
+            + (['--bundle=' + (cluster_bundles.files | map(attribute='path') | join(','))] if deployment_mode == 'airgapped' else [])
+            + (['--registry-url=' + registry_url] if registry_url | length > 0 else [])
+            + (['--registry-username=' + registry_username, '--registry-password=' + registry_password] if registry_url | length > 0 and registry_username | length > 0 else [])
+            + (['--registry-mirror-url=' + registry_mirror_url] if registry_mirror_url | length > 0 else [])
+            + (['--registry-mirror-username=' + registry_mirror_username, '--registry-mirror-password=' + registry_mirror_password] if registry_mirror_url | length > 0 and registry_mirror_username | length > 0 else [])
+            + (['--registry-mirror-cacert=' + registry_mirror_ca_file] if registry_mirror_ca_file | length > 0 else [])
+          }}
+      no_log: true
+
+    - name: Check for an existing completed cluster kubeconfig
+      ansible.builtin.stat:
+        path: "/home/{{ bastion_user }}/{{ cluster_name }}.conf"
+      register: existing_kubeconfig
+
+    - name: Create NKP management cluster with preflight checks enabled
+      ansible.builtin.command:
+        argv: "{{ nkp_cluster_argv }}"
+      environment:
+        NUTANIX_USER: "{{ pc_user }}"
+        NUTANIX_PASSWORD: "{{ pc_password }}"
+      async: 10800
+      poll: 60
+      register: nkp_create
+      no_log: true
+      when: not existing_kubeconfig.stat.exists
+
+    - name: Report successful cluster creation
+      ansible.builtin.debug:
+        msg: >-
+          NKP {{ nkp_version.stdout | trim }} management cluster '{{ cluster_name }}' is available.
+          Kubeconfig: /home/{{ bastion_user }}/{{ cluster_name }}.conf
