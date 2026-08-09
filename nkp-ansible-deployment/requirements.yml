@@ -1,0 +1,8 @@
+sed: --: No such file or directory
+---
+collections:
+  - name: nutanix.ncp
+    version: ">=2.3.0,<2.6.0"
+  - name: community.crypto
+    version: ">=2.22.0,<3.0.0"
+
