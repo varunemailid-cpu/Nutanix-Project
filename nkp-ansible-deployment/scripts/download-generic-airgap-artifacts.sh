@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 set -euo pipefail
 
 # Run this script on an Internet-connected Ubuntu 24.04 AMD64 staging host.
@@ -18,7 +17,8 @@ if [[ "$(dpkg --print-architecture)" != "amd64" ]]; then
   exit 1
 fi
 
-if [[ "$(. /etc/os-release && printf '%s' "${VERSION_ID}")" != "24.04" ]]; then
+ubuntu_version="$(awk -F= '$1 == "VERSION_ID" {gsub(/\"/, "", $2); print $2}' /etc/os-release)"
+if [[ "${ubuntu_version}" != "24.04" ]]; then
   echo "ERROR: run on Ubuntu 24.04 so downloaded dependencies match the NKP bastion." >&2
   exit 1
 fi
@@ -35,7 +35,7 @@ sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
 sudo chmod 0644 /etc/apt/keyrings/docker.asc
 
 docker_arch="$(dpkg --print-architecture)"
-ubuntu_codename="$(. /etc/os-release && printf '%s' "${VERSION_CODENAME}")"
+ubuntu_codename="$(awk -F= '$1 == "VERSION_CODENAME" {gsub(/\"/, "", $2); print $2}' /etc/os-release)"
 printf '%s\n' \
   "Types: deb" \
   "URIs: https://download.docker.com/linux/ubuntu" \
