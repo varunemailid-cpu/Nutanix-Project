@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Run this script on an Internet-connected Ubuntu 24.04 AMD64 staging host.
