@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Reusable NKP 2.18 deployment on Nutanix AHV
 
 This Ansible repository deploys an NKP 2.18 self-managed management cluster on Nutanix AHV using the Nutanix-provided Ubuntu 24.04 image. It supports connected and air-gapped environments from the same playbook.
