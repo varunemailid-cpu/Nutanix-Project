@@ -1,0 +1,58 @@
+sed: --: No such file or directory
+---
+# connected or airgapped
+deployment_mode: connected
+
+# Nutanix
+pc_host: "172.16.0.14"
+pc_port: 9440
+validate_certs: false
+# Base64-encoded Prism Central self-signed CA certificate. Prefer this over
+# allow_insecure_prism for production. The guide warns against supplying a full
+# CA bundle because cloud-init user data is limited to 16 KiB.
+pc_additional_trust_bundle_b64: ""
+pe_cluster: "Non-Prod-01"
+subnet: "vlan20-managed"
+storage_container: "SelfServiceContainer"
+
+# Cluster networking. These ranges must not overlap.
+cluster_name: "nkp-management"
+control_plane_vip: "172.16.2.190"
+service_lb_range: "172.16.2.243-172.16.2.247"
+pod_cidr: "192.168.0.0/16"
+service_cidr: "10.96.0.0/12"
+ntp_servers: []
+
+# NKP 2.18 production defaults from the administration guide.
+control_plane_replicas: 3
+control_plane_vcpus: 4
+control_plane_memory_gib: 16
+worker_replicas: 4
+worker_vcpus: 8
+worker_memory_gib: 32
+
+# Bastion
+bastion_name: "{{ cluster_name }}-bastion"
+bastion_user: "nkpadmin"
+bastion_vcpus: 4
+bastion_memory_gib: 16
+bastion_disk_gib: 200
+bastion_ssh_private_key: "{{ playbook_dir }}/../state/ssh/bastion_ed25519"
+
+# Artifact selection. Keep the vendor filenames unchanged.
+artifact_root: "{{ playbook_dir }}/../artifacts/nkp-2.18"
+nkp_cli_pattern: "nkp_v2.18*_linux_amd64.tar.gz"
+ubuntu_image_pattern: "nkp-ubuntu-24.04*1.35*.qcow2"
+airgap_bundle_pattern: "nkp-air-gapped-bundle*_linux_amd64.tar.gz"
+
+# Registry settings.
+# Connected mode pulls from public registries by default. Docker Hub credentials
+# are recommended by Nutanix to avoid rate limits.
+registry_url: ""
+registry_mirror_url: ""
+registry_mirror_ca_file: ""
+
+# TLS and optional access settings.
+allow_insecure_prism: true
+control_plane_external_endpoint: ""
+ssh_username_for_nodes: "nkpadmin"
