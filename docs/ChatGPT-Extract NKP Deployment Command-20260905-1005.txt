@@ -1,0 +1,481 @@
+Extract NKP Deployment Command
+
+User: Anonymous
+Created: 9/5/2026 9:41:57
+Updated: 9/5/2026 9:59:22
+Exported: 9/5/2026 10:05:46
+Link: https://chatgpt.com/c/6a9baba4-a774-83eb-8a48-90a2f4adbfd2
+
+## Prompt:
+9/5/2026, 9:41:54 AM
+
+In this chat, I wanted to extract and reuse only the environmental variable and the deployment NKP deploy command. So I need to reuse it for a different project. In this, I have used an air gap method to deploy, and I have specified bundle approach for NKP deployment without a Harbor. And I need exactly those things to be extracted and reusable format so that I can use it on a different project.
+
+[Attachment: ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt]
+
+## Response:
+9/5/2026, 9:42:09 AM
+
+I’ll extract the final working environment variables and nkp create cluster nutanix command, sanitize project-specific values, and package them as reusable air-gapped, bundle-based templates without Harbor.
+
+The latest clean baseline uses local bootstrap, Konvoy, and Kommander tar bundles with --airgapped, while omitting registry-mirror and custom TLS/ingress-certificate flags.
+
+Extracting deployment pieces
+
+I’m isolating only the air-gapped bundle workflow: environment variables and the deployment command, excluding Harbor and unrelated project-specific details. I’ll format them as reusable templates with placeholders for another project.
+
+Extracted deployment pieces
+
+Consolidating the template
+
+I’m using the corrected, successful configuration: lowercase cluster name, precise bundle directory, self-signed ingress certificate, cluster hostname, and air-gapped self-managed deployment. Harbor-related variables and flags are intentionally omitted.
+
+Finalizing reusable extraction
+
+I’m keeping the corrected variables and command structure intact while replacing project-specific values with placeholders. The bundle paths, ingress certificate options, lowercase naming, and air-gapped flags remain included; Harbor configuration remains excluded.
+
+Packaging reusable scripts
+
+I’m preserving the two requested artifacts only: one environment script and one deployment script. I’m parameterizing version and project values while retaining the proven air-gapped bundle layout and custom ingress settings.
+
+Consolidated templates, extraction, and reusable scripts
+
+Interacted with Files
+
+Extracted latest NKP deployment variables and command occurrences
+
+Generated and repackaged NKP air-gapped deployment bundle
+
+Worked for 6m 18s
+
+Reusable NKP air-gapped bundle deployment
+
+I reviewed the full exported NKP deployment chat, not only the visible truncated section. The source was updated on September 4, 2026, and exported on September 5, 2026. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+The final working configuration was not printed once as a single consolidated script. The chat first contained the complete deployment script, followed by these confirmed corrections:
+
+Use the extracted bundle directory containing nkp-v2.16.1, the bootstrap image, and the Konvoy and Kommander bundles. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Keep the cluster name lowercase and RFC 1123 compliant. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Remove the unsupported --dns-servers flag. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+For the later successful deployment, use the LoadBalancer IP as CLUSTER_HOSTNAME and remove all custom ingress-certificate flags. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+After those changes, the management cluster was deployed and the UI was reported as working. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+I combined only those recorded changes into the reusable version below.
+
+Download the extracted scripts
+
+Download both scripts as a ZIP
+
+Download env_nkp_mgmt.sh
+
+Download deploy_nkp_mgmt.sh
+
+The scripts have been Bash syntax-tested and contain no project password or other copied credential.
+
+1. Reusable environment variables
+
+The downloaded env_nkp_mgmt.sh contains:
+
+#!/usr/bin/env bash
+# Reusable NKP management-cluster environment template.
+# Method: air-gapped local bundle deployment on Nutanix AHV.
+# Harbor / external registry mirror: not used.
+# Replace every CHANGE_ME value before running the deployment script.
+
+# -----------------------------------------------------------------------------
+# NKP release and extracted air-gapped bundle paths
+# Expected layout:
+#   /data/nkp-<version>/bundles/airgapped/nkp-v<version>/
+# -----------------------------------------------------------------------------
+export NKP_VERSION="2.16.1"
+export NKP_BASE_DIR="/data/nkp-${NKP_VERSION}"
+export NKP_BUNDLE_DIR="${NKP_BASE_DIR}/bundles/airgapped/nkp-v${NKP_VERSION}"
+
+export NKP_BOOTSTRAP_IMAGE="${NKP_BUNDLE_DIR}/konvoy-bootstrap-image-v${NKP_VERSION}.tar"
+export NKP_KONVOY_BUNDLE="${NKP_BUNDLE_DIR}/container-images/konvoy-image-bundle-v${NKP_VERSION}.tar"
+export NKP_KOMMANDER_BUNDLE="${NKP_BUNDLE_DIR}/container-images/kommander-image-bundle-v${NKP_VERSION}.tar"
+
+# -----------------------------------------------------------------------------
+# NKP management cluster
+# CLUSTER_NAME must be lowercase and RFC 1123 compliant.
+# Set CLUSTER_HOSTNAME to the NKP ingress/LoadBalancer IP when not supplying
+# custom ingress certificates.
+# -----------------------------------------------------------------------------
+export CLUSTER_NAME="CHANGE_ME_LOWERCASE_CLUSTER_NAME"
+export CLUSTER_HOSTNAME="CHANGE_ME_LB_IP"
+
+# -----------------------------------------------------------------------------
+# Prism Central and AHV resources
+# -----------------------------------------------------------------------------
+export NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT="https://CHANGE_ME_PC_IP_OR_FQDN:9440"
+export NUTANIX_USER="CHANGE_ME_PC_USERNAME"
+
+# Supply this securely from the shell instead of saving it in the file.
+export NUTANIX_PASSWORD="${NUTANIX_PASSWORD:-}"
+
+export PRISM_ELEMENT_CLUSTER_NAME="CHANGE_ME_PE_CLUSTER_NAME"
+export SUBNET_NAME="CHANGE_ME_AHV_SUBNET_NAME"
+export STORAGE_CONTAINER="CHANGE_ME_STORAGE_CONTAINER"
+export IMAGE_NAME="CHANGE_ME_NKP_NODE_IMAGE.qcow2"
+
+# -----------------------------------------------------------------------------
+# Node counts
+# -----------------------------------------------------------------------------
+export CONTROL_PLANE_REPLICAS="3"
+export WORKER_REPLICAS="4"
+
+# -----------------------------------------------------------------------------
+# Kubernetes networking
+# These CIDRs must not overlap with the physical network, VPN, Docker networks,
+# or other Kubernetes networks reachable from this environment.
+# -----------------------------------------------------------------------------
+export POD_CIDR="CHANGE_ME_POD_CIDR"
+export SERVICE_CIDR="CHANGE_ME_SERVICE_CIDR"
+
+export CONTROL_PLANE_IP="CHANGE_ME_CONTROL_PLANE_VIP"
+export LB_IP_RANGE="CHANGE_ME_LB_IP-CHANGE_ME_LB_IP"
+
+# -----------------------------------------------------------------------------
+# SSH access injected into NKP-created VMs
+# -----------------------------------------------------------------------------
+export SSH_USERNAME="nutanix"
+export SSH_KEY_FILE="${HOME}/.ssh/id_rsa.pub"
+
+Values to replace for each new project
+
+Variable
+New-project value
+NKP_VERSION
+NKP CLI and air-gapped bundle version
+NKP_BASE_DIR
+Root directory containing the extracted bundle
+CLUSTER_NAME
+Lowercase NKP management-cluster name
+CLUSTER_HOSTNAME
+Single NKP UI/ingress LoadBalancer IP
+NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT
+Prism Central endpoint, including https:// and port
+NUTANIX_USER
+Prism Central service account
+PRISM_ELEMENT_CLUSTER_NAME
+Exact Prism Element cluster name
+SUBNET_NAME
+Exact AHV subnet name
+STORAGE_CONTAINER
+Nutanix CSI storage container
+IMAGE_NAME
+NKP-compatible QCOW2 image already uploaded to Prism
+CONTROL_PLANE_REPLICAS
+Control-plane VM count
+WORKER_REPLICAS
+Management-cluster worker count
+POD_CIDR
+Non-overlapping Kubernetes pod network
+SERVICE_CIDR
+Non-overlapping Kubernetes service network
+CONTROL_PLANE_IP
+Unused IP reserved for the Kubernetes API VIP
+LB_IP_RANGE
+MetalLB range; use the same IP twice when assigning one IP
+SSH_USERNAME
+Username supported by the NKP node image
+SSH_KEY_FILE
+Existing SSH public-key file
+
+For example, when using one LoadBalancer IP:
+
+export CLUSTER_HOSTNAME="10.20.30.41"
+export LB_IP_RANGE="10.20.30.41-10.20.30.41"
+
+2. Reusable NKP management-cluster command
+
+The essential extracted deployment command is:
+
+nkp create cluster nutanix \
+  --cluster-name "${CLUSTER_NAME}" \
+  --cluster-hostname "${CLUSTER_HOSTNAME}" \
+  --self-managed \
+  --airgapped \
+  --bootstrap-cluster-image "${NKP_BOOTSTRAP_IMAGE}" \
+  --bundle "${NKP_KONVOY_BUNDLE}" \
+  --bundle "${NKP_KOMMANDER_BUNDLE}" \
+  --endpoint "${NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT}" \
+  --insecure \
+  --control-plane-endpoint-ip "${CONTROL_PLANE_IP}" \
+  --control-plane-vm-image "${IMAGE_NAME}" \
+  --control-plane-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --control-plane-subnets "${SUBNET_NAME}" \
+  --control-plane-replicas "${CONTROL_PLANE_REPLICAS}" \
+  --worker-vm-image "${IMAGE_NAME}" \
+  --worker-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --worker-subnets "${SUBNET_NAME}" \
+  --worker-replicas "${WORKER_REPLICAS}" \
+  --csi-storage-container "${STORAGE_CONTAINER}" \
+  --kubernetes-pod-network-cidr "${POD_CIDR}" \
+  --kubernetes-service-cidr "${SERVICE_CIDR}" \
+  --kubernetes-service-load-balancer-ip-range "${LB_IP_RANGE}" \
+  --ssh-username "${SSH_USERNAME}" \
+  --ssh-public-key-file "${SSH_KEY_FILE}" \
+  --verbose 5
+
+The downloaded deployment script wraps this command with checks for missing variables, missing bundle files, an invalid uppercase cluster name, a missing SSH key, and a missing NKP CLI.
+
+What makes this the no-Harbor bundle approach
+
+The deployment supplies the required images directly from the Bastion through:
+
+--bootstrap-cluster-image "${NKP_BOOTSTRAP_IMAGE}"
+--bundle "${NKP_KONVOY_BUNDLE}"
+--bundle "${NKP_KOMMANDER_BUNDLE}"
+--airgapped
+
+It deliberately contains none of the following:
+
+--registry-mirror-url
+--registry-mirror-username
+--registry-mirror-password
+--registry-mirror-cacert
+Harbor hostname
+Harbor project
+Harbor credentials
+
+It also excludes the custom certificate options that were removed in the later successful deployment:
+
+--ingress-certificate
+--ingress-private-key
+--ingress-ca
+
+This package is specifically for creating the self-managed NKP management cluster. The --self-managed flag and Kommander bundle are retained from the working management-cluster flow. The local bundle-based command structure appears in the original deployment script. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Run it in the new project
+
+Keep both files in the same directory:
+
+chmod +x env_nkp_mgmt.sh deploy_nkp_mgmt.sh
+
+Edit the project-specific values:
+
+nano env_nkp_mgmt.sh
+
+Set the Prism Central password without storing it in the file:
+
+read -rsp "Prism Central password: " NUTANIX_PASSWORD
+export NUTANIX_PASSWORD
+echo
+
+Then deploy:
+
+./deploy_nkp_mgmt.sh
+
+The --insecure option was retained from the source deployment because Prism Central was accessed using an endpoint whose certificate was not validated by the Bastion. Remove that one flag only when the new project's Prism Central certificate is already trusted.
+
+## Prompt:
+9/5/2026, 9:55:28 AM
+
+i need a dry run NKP management-cluster command
+
+## Response:
+9/5/2026, 9:55:30 AM
+
+I’ll verify whether NKP 2.16.1 supports a native dry-run option, then provide a safe validation command that cannot provision AHV resources.
+
+Verifying Nutanix options
+
+I’m checking whether the Nutanix cluster command supports a true validation or dry-run mode. If it does, I’ll provide the safest command; otherwise, I’ll suggest a non-destructive argument-checking approach.
+
+Verified Nutanix options
+
+Checking dry-run support
+
+I’m verifying whether NKP provides a native dry-run option. I’ll avoid inventing an unsupported flag and, if necessary, provide a safe validation command that prints the management-cluster command without applying changes.
+
+Checked dry-run support
+
+Planned NKP Management Cluster deployment
+
+Searching the web
+
+NKP Presets Master thread (Infos-Links-Demos... ...
+Certificate Trust - opendocs.nutanix.com
+NKP Post 3: Deploying the NKP mgmt Cluster - Jonas Blog
+Meet Heather, special guest artist at the "NKP Creating ...
+Creating the Nutanix Kubernetes Platform Management ...
+Anyone using NKP Starter? : r/nutanix
+NKP - SUNDAY SESSIONS Our closing song ...
+Motorola R5 NKP Digital Handheld Radio
+nutanixdev/nkp-quickstart
+Deploying Nutanix Kubernetes Platform on Nutanix Cluster
+
+Confirming dry-run syntax
+
+I’m checking the official --dry-run -o yaml --output-directory . pattern and whether it applies to an air-gapped, self-managed management cluster in NKP 2.16.1, rather than assuming workload-cluster behavior carries over.
+
+Confirmed dry-run syntax
+
+Searching the web
+
+NKP Post 3: Deploying the NKP mgmt Cluster - Jonas Blog
+Creating a New Cluster in an Air-gapped Environment
+Kent C. Dodds Builds an MCP Server from Scratch
+supabase db push --dry-run doesn't correctly test migrations
+That was a solid dry run. Next time I'm using actual weights! ...
+In praise of --dry-run : r/programming
+How to Deploy a Kubernetes Cluster in the Nutanix ...
+Ecto dry-run migrate
+
+Searched 10 websites
+
+Inspecting Deployment Script and Environment
+
+Inspected deployment script and environment
+
+Searching "--self-managed" "--dry-run" "--output-directory" "nkp create cluster nutanix"
+
+Creating a New Cluster in an Air-gapped Environment
+Demand for self-managed online telemedicine abortion in ...
+Dry Run for backups - Getting Help
+Nutanix Kubernetes Platform (NKP) | Part 2
+supabase db push --dry-run doesn't correctly test migrations
+In praise of --dry-run : r/programming
+Nutanix Kubernetes Platform v2 12 | PDF
+NCP CN Revision Questions #3 Flashcards
+Self–managed Teams: An insider's story | Helen Sanderson
+Certbot post-hook invoked only in dry-run mode - Help
+Nutanix Kubernetes Platform（NKP）で nkp コマンドを一般 ...
+Migrate from self-managed to SaaS Gitlab
+Nutanix Kubernetes Platform (NKP ...
+Radiation Assurance Self-Managed Flowchart Long ...
+
+Creating the Nutanix Kubernetes Platform Management ...
+NKP Presets Master thread (Infos-Links-Demos... ...
+The Dry (2020)
+Kent C. Dodds Builds an MCP Server from Scratch
+Management cluster setup for bare metal - CAPH Docs
+Meet Heather, special guest artist at the "NKP Creating ...
+Cluster API Operator Git Ops Getting Started - गोपाल Engineering
+Anyone using NKP Starter? : r/nutanix
+Chris's story: “The Try Dry® app can give you a real boost ...
+NKP - SUNDAY SESSIONS Our closing song ...
+supabase db push --dry-run doesn't correctly test migrations
+Begin at the Beginning — Managing Cluster API Bootstrap ...
+Motorola R5 NKP Digital Handheld Radio
+
+Searched 14 websites
+
+Preparing the dry run
+
+I’m using the official dry-run output pattern with your existing air-gapped management-cluster variables. This generates YAML without applying the target cluster, while still checking command construction and supplied values.
+
+Prepared the dry run
+
+Generated the final Dataflow launch command
+
+Worked for 3m 50s
+
+Native NKP management-cluster dry run
+
+Run this from the directory containing your reusable env_nkp_mgmt.sh. It keeps your air-gapped local-bundle method, uses no Harbor, and retains the final IP-based hostname configuration without custom ingress-certificate flags. Your previous deployment used the extracted bundle under .../airgapped/nkp-v2.16.1. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt The later working configuration used the LoadBalancer IP as the cluster hostname and removed the three custom certificate flags. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+cd /data/nkp-2.16.1/scripts
+
+# Load the reusable project variables
+source ./env_nkp_mgmt.sh
+
+# Prompt for the Prism Central password when it is not already exported
+if [[ -z "${NUTANIX_PASSWORD:-}" ]]; then
+  read -rsp "Enter Prism Central password: " NUTANIX_PASSWORD
+  export NUTANIX_PASSWORD
+  echo
+fi
+
+# Secure directory for generated manifests
+umask 077
+export DRY_RUN_DIR="${NKP_BASE_DIR}/dry-run/${CLUSTER_NAME}-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "${DRY_RUN_DIR}"
+
+# Native NKP dry run: generate manifests only
+nkp create cluster nutanix \
+  --cluster-name "${CLUSTER_NAME}" \
+  --cluster-hostname "${CLUSTER_HOSTNAME}" \
+  --self-managed \
+  --airgapped \
+  --bootstrap-cluster-image "${NKP_BOOTSTRAP_IMAGE}" \
+  --bundle "${NKP_KONVOY_BUNDLE}" \
+  --bundle "${NKP_KOMMANDER_BUNDLE}" \
+  --endpoint "${NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT}" \
+  --insecure \
+  --control-plane-endpoint-ip "${CONTROL_PLANE_IP}" \
+  --control-plane-vm-image "${IMAGE_NAME}" \
+  --control-plane-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --control-plane-subnets "${SUBNET_NAME}" \
+  --control-plane-replicas "${CONTROL_PLANE_REPLICAS}" \
+  --worker-vm-image "${IMAGE_NAME}" \
+  --worker-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --worker-subnets "${SUBNET_NAME}" \
+  --worker-replicas "${WORKER_REPLICAS}" \
+  --csi-storage-container "${STORAGE_CONTAINER}" \
+  --kubernetes-pod-network-cidr "${POD_CIDR}" \
+  --kubernetes-service-cidr "${SERVICE_CIDR}" \
+  --kubernetes-service-load-balancer-ip-range "${LB_IP_RANGE}" \
+  --ssh-username "${SSH_USERNAME}" \
+  --ssh-public-key-file "${SSH_KEY_FILE}" \
+  --dry-run \
+  -o yaml \
+  --output-directory "${DRY_RUN_DIR}" \
+  --verbose 5
+
+NKP documents --dry-run -o yaml --output-directory as the method for generating cluster manifests without deploying the target cluster. (Nutanix Portal)
+
+Check the generated output
+
+echo
+echo "Dry-run output directory:"
+echo "${DRY_RUN_DIR}"
+
+echo
+echo "Generated files:"
+find "${DRY_RUN_DIR}" -maxdepth 1 -type f -printf '%f\n' | sort
+
+Check the generated Kubernetes resource types without displaying secret values:
+
+grep -Rh '^kind:' "${DRY_RUN_DIR}" | sort -u
+
+Check the generated cluster name:
+
+grep -Rns 'kind: Cluster' "${DRY_RUN_DIR}"
+grep -Rns "name: ${CLUSTER_NAME}" "${DRY_RUN_DIR}" | head
+
+Check that the intended Nutanix infrastructure values appear:
+
+grep -RnsE \
+"${PRISM_ELEMENT_CLUSTER_NAME}|${SUBNET_NAME}|${STORAGE_CONTAINER}|${IMAGE_NAME}|${CONTROL_PLANE_IP}|${LB_IP_RANGE}" \
+"${DRY_RUN_DIR}"
+
+Important security note
+
+The dry run can generate Prism Central credential Secret manifests along with the Cluster API manifests. Keep the directory restricted and do not email, upload, or commit it to Git. The Nutanix example shows outputs such as the cluster YAML and Prism credential Secret YAML files. (Nutanix)
+
+Confirm permissions:
+
+chmod -R go-rwx "${DRY_RUN_DIR}"
+find "${DRY_RUN_DIR}" -maxdepth 1 -type f -exec ls -l {} \;
+
+Do not run this command unless you intentionally want to begin provisioning:
+
+kubectl apply -f "${DRY_RUN_DIR}"
+
+The native dry run will generate the deployment manifests, but it will not create the target NKP management-cluster VMs on AHV.
+
+Sources:
+
+Creating a New Cluster in an Air-gapped Environment
+
+How to Deploy a Kubernetes Cluster in the Nutanix Kubernetes Platform Using Terraform – Nutanix.dev
+
+
+
+Powered by ChatGPT Exporter (https://www.chatgptexporter.com)
