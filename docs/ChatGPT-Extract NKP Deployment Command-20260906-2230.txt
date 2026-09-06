@@ -1,0 +1,5109 @@
+Extract NKP Deployment Command
+
+User: Anonymous
+Created: 9/5/2026 9:41:57
+Updated: 9/6/2026 22:27:59
+Exported: 9/6/2026 22:30:38
+Link: https://chatgpt.com/c/6a9baba4-a774-83eb-8a48-90a2f4adbfd2
+
+## Prompt:
+9/5/2026, 9:41:54 AM
+
+In this chat, I wanted to extract and reuse only the environmental variable and the deployment NKP deploy command. So I need to reuse it for a different project. In this, I have used an air gap method to deploy, and I have specified bundle approach for NKP deployment without a Harbor. And I need exactly those things to be extracted and reusable format so that I can use it on a different project.
+
+[Attachment: ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt]
+
+## Response:
+9/5/2026, 9:42:09 AM
+
+I’ll extract the final working environment variables and nkp create cluster nutanix command, sanitize project-specific values, and package them as reusable air-gapped, bundle-based templates without Harbor.
+
+The latest clean baseline uses local bootstrap, Konvoy, and Kommander tar bundles with --airgapped, while omitting registry-mirror and custom TLS/ingress-certificate flags.
+
+Extracting deployment pieces
+
+I’m isolating only the air-gapped bundle workflow: environment variables and the deployment command, excluding Harbor and unrelated project-specific details. I’ll format them as reusable templates with placeholders for another project.
+
+Extracted deployment pieces
+
+Consolidating the template
+
+I’m using the corrected, successful configuration: lowercase cluster name, precise bundle directory, self-signed ingress certificate, cluster hostname, and air-gapped self-managed deployment. Harbor-related variables and flags are intentionally omitted.
+
+Finalizing reusable extraction
+
+I’m keeping the corrected variables and command structure intact while replacing project-specific values with placeholders. The bundle paths, ingress certificate options, lowercase naming, and air-gapped flags remain included; Harbor configuration remains excluded.
+
+Packaging reusable scripts
+
+I’m preserving the two requested artifacts only: one environment script and one deployment script. I’m parameterizing version and project values while retaining the proven air-gapped bundle layout and custom ingress settings.
+
+Consolidated templates, extraction, and reusable scripts
+
+Interacted with Files
+
+Extracted latest NKP deployment variables and command occurrences
+
+Generated and repackaged NKP air-gapped deployment bundle
+
+Worked for 6m 18s
+
+Reusable NKP air-gapped bundle deployment
+
+I reviewed the full exported NKP deployment chat, not only the visible truncated section. The source was updated on September 4, 2026, and exported on September 5, 2026. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+The final working configuration was not printed once as a single consolidated script. The chat first contained the complete deployment script, followed by these confirmed corrections:
+
+Use the extracted bundle directory containing nkp-v2.16.1, the bootstrap image, and the Konvoy and Kommander bundles. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Keep the cluster name lowercase and RFC 1123 compliant. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Remove the unsupported --dns-servers flag. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+For the later successful deployment, use the LoadBalancer IP as CLUSTER_HOSTNAME and remove all custom ingress-certificate flags. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+After those changes, the management cluster was deployed and the UI was reported as working. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+I combined only those recorded changes into the reusable version below.
+
+Download the extracted scripts
+
+Download both scripts as a ZIP
+
+Download env_nkp_mgmt.sh
+
+Download deploy_nkp_mgmt.sh
+
+The scripts have been Bash syntax-tested and contain no project password or other copied credential.
+
+1. Reusable environment variables
+
+The downloaded env_nkp_mgmt.sh contains:
+
+#!/usr/bin/env bash
+# Reusable NKP management-cluster environment template.
+# Method: air-gapped local bundle deployment on Nutanix AHV.
+# Harbor / external registry mirror: not used.
+# Replace every CHANGE_ME value before running the deployment script.
+
+# -----------------------------------------------------------------------------
+# NKP release and extracted air-gapped bundle paths
+# Expected layout:
+#   /data/nkp-<version>/bundles/airgapped/nkp-v<version>/
+# -----------------------------------------------------------------------------
+export NKP_VERSION="2.16.1"
+export NKP_BASE_DIR="/data/nkp-${NKP_VERSION}"
+export NKP_BUNDLE_DIR="${NKP_BASE_DIR}/bundles/airgapped/nkp-v${NKP_VERSION}"
+
+export NKP_BOOTSTRAP_IMAGE="${NKP_BUNDLE_DIR}/konvoy-bootstrap-image-v${NKP_VERSION}.tar"
+export NKP_KONVOY_BUNDLE="${NKP_BUNDLE_DIR}/container-images/konvoy-image-bundle-v${NKP_VERSION}.tar"
+export NKP_KOMMANDER_BUNDLE="${NKP_BUNDLE_DIR}/container-images/kommander-image-bundle-v${NKP_VERSION}.tar"
+
+# -----------------------------------------------------------------------------
+# NKP management cluster
+# CLUSTER_NAME must be lowercase and RFC 1123 compliant.
+# Set CLUSTER_HOSTNAME to the NKP ingress/LoadBalancer IP when not supplying
+# custom ingress certificates.
+# -----------------------------------------------------------------------------
+export CLUSTER_NAME="CHANGE_ME_LOWERCASE_CLUSTER_NAME"
+export CLUSTER_HOSTNAME="CHANGE_ME_LB_IP"
+
+# -----------------------------------------------------------------------------
+# Prism Central and AHV resources
+# -----------------------------------------------------------------------------
+export NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT="https://CHANGE_ME_PC_IP_OR_FQDN:9440"
+export NUTANIX_USER="CHANGE_ME_PC_USERNAME"
+
+# Supply this securely from the shell instead of saving it in the file.
+export NUTANIX_PASSWORD="${NUTANIX_PASSWORD:-}"
+
+export PRISM_ELEMENT_CLUSTER_NAME="CHANGE_ME_PE_CLUSTER_NAME"
+export SUBNET_NAME="CHANGE_ME_AHV_SUBNET_NAME"
+export STORAGE_CONTAINER="CHANGE_ME_STORAGE_CONTAINER"
+export IMAGE_NAME="CHANGE_ME_NKP_NODE_IMAGE.qcow2"
+
+# -----------------------------------------------------------------------------
+# Node counts
+# -----------------------------------------------------------------------------
+export CONTROL_PLANE_REPLICAS="3"
+export WORKER_REPLICAS="4"
+
+# -----------------------------------------------------------------------------
+# Kubernetes networking
+# These CIDRs must not overlap with the physical network, VPN, Docker networks,
+# or other Kubernetes networks reachable from this environment.
+# -----------------------------------------------------------------------------
+export POD_CIDR="CHANGE_ME_POD_CIDR"
+export SERVICE_CIDR="CHANGE_ME_SERVICE_CIDR"
+
+export CONTROL_PLANE_IP="CHANGE_ME_CONTROL_PLANE_VIP"
+export LB_IP_RANGE="CHANGE_ME_LB_IP-CHANGE_ME_LB_IP"
+
+# -----------------------------------------------------------------------------
+# SSH access injected into NKP-created VMs
+# -----------------------------------------------------------------------------
+export SSH_USERNAME="nutanix"
+export SSH_KEY_FILE="${HOME}/.ssh/id_rsa.pub"
+
+Values to replace for each new project
+
+Variable
+New-project value
+NKP_VERSION
+NKP CLI and air-gapped bundle version
+NKP_BASE_DIR
+Root directory containing the extracted bundle
+CLUSTER_NAME
+Lowercase NKP management-cluster name
+CLUSTER_HOSTNAME
+Single NKP UI/ingress LoadBalancer IP
+NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT
+Prism Central endpoint, including https:// and port
+NUTANIX_USER
+Prism Central service account
+PRISM_ELEMENT_CLUSTER_NAME
+Exact Prism Element cluster name
+SUBNET_NAME
+Exact AHV subnet name
+STORAGE_CONTAINER
+Nutanix CSI storage container
+IMAGE_NAME
+NKP-compatible QCOW2 image already uploaded to Prism
+CONTROL_PLANE_REPLICAS
+Control-plane VM count
+WORKER_REPLICAS
+Management-cluster worker count
+POD_CIDR
+Non-overlapping Kubernetes pod network
+SERVICE_CIDR
+Non-overlapping Kubernetes service network
+CONTROL_PLANE_IP
+Unused IP reserved for the Kubernetes API VIP
+LB_IP_RANGE
+MetalLB range; use the same IP twice when assigning one IP
+SSH_USERNAME
+Username supported by the NKP node image
+SSH_KEY_FILE
+Existing SSH public-key file
+
+For example, when using one LoadBalancer IP:
+
+export CLUSTER_HOSTNAME="10.20.30.41"
+export LB_IP_RANGE="10.20.30.41-10.20.30.41"
+
+2. Reusable NKP management-cluster command
+
+The essential extracted deployment command is:
+
+nkp create cluster nutanix \
+  --cluster-name "${CLUSTER_NAME}" \
+  --cluster-hostname "${CLUSTER_HOSTNAME}" \
+  --self-managed \
+  --airgapped \
+  --bootstrap-cluster-image "${NKP_BOOTSTRAP_IMAGE}" \
+  --bundle "${NKP_KONVOY_BUNDLE}" \
+  --bundle "${NKP_KOMMANDER_BUNDLE}" \
+  --endpoint "${NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT}" \
+  --insecure \
+  --control-plane-endpoint-ip "${CONTROL_PLANE_IP}" \
+  --control-plane-vm-image "${IMAGE_NAME}" \
+  --control-plane-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --control-plane-subnets "${SUBNET_NAME}" \
+  --control-plane-replicas "${CONTROL_PLANE_REPLICAS}" \
+  --worker-vm-image "${IMAGE_NAME}" \
+  --worker-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --worker-subnets "${SUBNET_NAME}" \
+  --worker-replicas "${WORKER_REPLICAS}" \
+  --csi-storage-container "${STORAGE_CONTAINER}" \
+  --kubernetes-pod-network-cidr "${POD_CIDR}" \
+  --kubernetes-service-cidr "${SERVICE_CIDR}" \
+  --kubernetes-service-load-balancer-ip-range "${LB_IP_RANGE}" \
+  --ssh-username "${SSH_USERNAME}" \
+  --ssh-public-key-file "${SSH_KEY_FILE}" \
+  --verbose 5
+
+The downloaded deployment script wraps this command with checks for missing variables, missing bundle files, an invalid uppercase cluster name, a missing SSH key, and a missing NKP CLI.
+
+What makes this the no-Harbor bundle approach
+
+The deployment supplies the required images directly from the Bastion through:
+
+--bootstrap-cluster-image "${NKP_BOOTSTRAP_IMAGE}"
+--bundle "${NKP_KONVOY_BUNDLE}"
+--bundle "${NKP_KOMMANDER_BUNDLE}"
+--airgapped
+
+It deliberately contains none of the following:
+
+--registry-mirror-url
+--registry-mirror-username
+--registry-mirror-password
+--registry-mirror-cacert
+Harbor hostname
+Harbor project
+Harbor credentials
+
+It also excludes the custom certificate options that were removed in the later successful deployment:
+
+--ingress-certificate
+--ingress-private-key
+--ingress-ca
+
+This package is specifically for creating the self-managed NKP management cluster. The --self-managed flag and Kommander bundle are retained from the working management-cluster flow. The local bundle-based command structure appears in the original deployment script. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Run it in the new project
+
+Keep both files in the same directory:
+
+chmod +x env_nkp_mgmt.sh deploy_nkp_mgmt.sh
+
+Edit the project-specific values:
+
+nano env_nkp_mgmt.sh
+
+Set the Prism Central password without storing it in the file:
+
+read -rsp "Prism Central password: " NUTANIX_PASSWORD
+export NUTANIX_PASSWORD
+echo
+
+Then deploy:
+
+./deploy_nkp_mgmt.sh
+
+The --insecure option was retained from the source deployment because Prism Central was accessed using an endpoint whose certificate was not validated by the Bastion. Remove that one flag only when the new project's Prism Central certificate is already trusted.
+
+## Prompt:
+9/5/2026, 9:55:28 AM
+
+i need a dry run NKP management-cluster command
+
+## Response:
+9/5/2026, 9:55:30 AM
+
+I’ll verify whether NKP 2.16.1 supports a native dry-run option, then provide a safe validation command that cannot provision AHV resources.
+
+Verifying Nutanix options
+
+I’m checking whether the Nutanix cluster command supports a true validation or dry-run mode. If it does, I’ll provide the safest command; otherwise, I’ll suggest a non-destructive argument-checking approach.
+
+Verified Nutanix options
+
+Checking dry-run support
+
+I’m verifying whether NKP provides a native dry-run option. I’ll avoid inventing an unsupported flag and, if necessary, provide a safe validation command that prints the management-cluster command without applying changes.
+
+Checked dry-run support
+
+Planned NKP Management Cluster deployment
+
+Searching the web
+
+NKP Presets Master thread (Infos-Links-Demos... ...
+Certificate Trust - opendocs.nutanix.com
+NKP Post 3: Deploying the NKP mgmt Cluster - Jonas Blog
+Meet Heather, special guest artist at the "NKP Creating ...
+Creating the Nutanix Kubernetes Platform Management ...
+Anyone using NKP Starter? : r/nutanix
+NKP - SUNDAY SESSIONS Our closing song ...
+Motorola R5 NKP Digital Handheld Radio
+nutanixdev/nkp-quickstart
+Deploying Nutanix Kubernetes Platform on Nutanix Cluster
+
+Confirming dry-run syntax
+
+I’m checking the official --dry-run -o yaml --output-directory . pattern and whether it applies to an air-gapped, self-managed management cluster in NKP 2.16.1, rather than assuming workload-cluster behavior carries over.
+
+Confirmed dry-run syntax
+
+Searching the web
+
+NKP Post 3: Deploying the NKP mgmt Cluster - Jonas Blog
+Creating a New Cluster in an Air-gapped Environment
+Kent C. Dodds Builds an MCP Server from Scratch
+supabase db push --dry-run doesn't correctly test migrations
+That was a solid dry run. Next time I'm using actual weights! ...
+In praise of --dry-run : r/programming
+How to Deploy a Kubernetes Cluster in the Nutanix ...
+Ecto dry-run migrate
+
+Searched 10 websites
+
+Inspecting Deployment Script and Environment
+
+Inspected deployment script and environment
+
+Searching "--self-managed" "--dry-run" "--output-directory" "nkp create cluster nutanix"
+
+Creating a New Cluster in an Air-gapped Environment
+Demand for self-managed online telemedicine abortion in ...
+Dry Run for backups - Getting Help
+Nutanix Kubernetes Platform (NKP) | Part 2
+supabase db push --dry-run doesn't correctly test migrations
+In praise of --dry-run : r/programming
+Nutanix Kubernetes Platform v2 12 | PDF
+NCP CN Revision Questions #3 Flashcards
+Self–managed Teams: An insider's story | Helen Sanderson
+Certbot post-hook invoked only in dry-run mode - Help
+Nutanix Kubernetes Platform（NKP）で nkp コマンドを一般 ...
+Migrate from self-managed to SaaS Gitlab
+Nutanix Kubernetes Platform (NKP ...
+Radiation Assurance Self-Managed Flowchart Long ...
+
+Creating the Nutanix Kubernetes Platform Management ...
+NKP Presets Master thread (Infos-Links-Demos... ...
+The Dry (2020)
+Kent C. Dodds Builds an MCP Server from Scratch
+Management cluster setup for bare metal - CAPH Docs
+Meet Heather, special guest artist at the "NKP Creating ...
+Cluster API Operator Git Ops Getting Started - गोपाल Engineering
+Anyone using NKP Starter? : r/nutanix
+Chris's story: “The Try Dry® app can give you a real boost ...
+NKP - SUNDAY SESSIONS Our closing song ...
+supabase db push --dry-run doesn't correctly test migrations
+Begin at the Beginning — Managing Cluster API Bootstrap ...
+Motorola R5 NKP Digital Handheld Radio
+
+Searched 14 websites
+
+Preparing the dry run
+
+I’m using the official dry-run output pattern with your existing air-gapped management-cluster variables. This generates YAML without applying the target cluster, while still checking command construction and supplied values.
+
+Prepared the dry run
+
+Generated the final Dataflow launch command
+
+Worked for 3m 50s
+
+Native NKP management-cluster dry run
+
+Run this from the directory containing your reusable env_nkp_mgmt.sh. It keeps your air-gapped local-bundle method, uses no Harbor, and retains the final IP-based hostname configuration without custom ingress-certificate flags. Your previous deployment used the extracted bundle under .../airgapped/nkp-v2.16.1. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt The later working configuration used the LoadBalancer IP as the cluster hostname and removed the three custom certificate flags. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+cd /data/nkp-2.16.1/scripts
+
+# Load the reusable project variables
+source ./env_nkp_mgmt.sh
+
+# Prompt for the Prism Central password when it is not already exported
+if [[ -z "${NUTANIX_PASSWORD:-}" ]]; then
+  read -rsp "Enter Prism Central password: " NUTANIX_PASSWORD
+  export NUTANIX_PASSWORD
+  echo
+fi
+
+# Secure directory for generated manifests
+umask 077
+export DRY_RUN_DIR="${NKP_BASE_DIR}/dry-run/${CLUSTER_NAME}-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "${DRY_RUN_DIR}"
+
+# Native NKP dry run: generate manifests only
+nkp create cluster nutanix \
+  --cluster-name "${CLUSTER_NAME}" \
+  --cluster-hostname "${CLUSTER_HOSTNAME}" \
+  --self-managed \
+  --airgapped \
+  --bootstrap-cluster-image "${NKP_BOOTSTRAP_IMAGE}" \
+  --bundle "${NKP_KONVOY_BUNDLE}" \
+  --bundle "${NKP_KOMMANDER_BUNDLE}" \
+  --endpoint "${NUTANIX_PC_FQDN_ENDPOINT_WITH_PORT}" \
+  --insecure \
+  --control-plane-endpoint-ip "${CONTROL_PLANE_IP}" \
+  --control-plane-vm-image "${IMAGE_NAME}" \
+  --control-plane-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --control-plane-subnets "${SUBNET_NAME}" \
+  --control-plane-replicas "${CONTROL_PLANE_REPLICAS}" \
+  --worker-vm-image "${IMAGE_NAME}" \
+  --worker-prism-element-cluster "${PRISM_ELEMENT_CLUSTER_NAME}" \
+  --worker-subnets "${SUBNET_NAME}" \
+  --worker-replicas "${WORKER_REPLICAS}" \
+  --csi-storage-container "${STORAGE_CONTAINER}" \
+  --kubernetes-pod-network-cidr "${POD_CIDR}" \
+  --kubernetes-service-cidr "${SERVICE_CIDR}" \
+  --kubernetes-service-load-balancer-ip-range "${LB_IP_RANGE}" \
+  --ssh-username "${SSH_USERNAME}" \
+  --ssh-public-key-file "${SSH_KEY_FILE}" \
+  --dry-run \
+  -o yaml \
+  --output-directory "${DRY_RUN_DIR}" \
+  --verbose 5
+
+NKP documents --dry-run -o yaml --output-directory as the method for generating cluster manifests without deploying the target cluster. (Nutanix Portal)
+
+Check the generated output
+
+echo
+echo "Dry-run output directory:"
+echo "${DRY_RUN_DIR}"
+
+echo
+echo "Generated files:"
+find "${DRY_RUN_DIR}" -maxdepth 1 -type f -printf '%f\n' | sort
+
+Check the generated Kubernetes resource types without displaying secret values:
+
+grep -Rh '^kind:' "${DRY_RUN_DIR}" | sort -u
+
+Check the generated cluster name:
+
+grep -Rns 'kind: Cluster' "${DRY_RUN_DIR}"
+grep -Rns "name: ${CLUSTER_NAME}" "${DRY_RUN_DIR}" | head
+
+Check that the intended Nutanix infrastructure values appear:
+
+grep -RnsE \
+"${PRISM_ELEMENT_CLUSTER_NAME}|${SUBNET_NAME}|${STORAGE_CONTAINER}|${IMAGE_NAME}|${CONTROL_PLANE_IP}|${LB_IP_RANGE}" \
+"${DRY_RUN_DIR}"
+
+Important security note
+
+The dry run can generate Prism Central credential Secret manifests along with the Cluster API manifests. Keep the directory restricted and do not email, upload, or commit it to Git. The Nutanix example shows outputs such as the cluster YAML and Prism credential Secret YAML files. (Nutanix)
+
+Confirm permissions:
+
+chmod -R go-rwx "${DRY_RUN_DIR}"
+find "${DRY_RUN_DIR}" -maxdepth 1 -type f -exec ls -l {} \;
+
+Do not run this command unless you intentionally want to begin provisioning:
+
+kubectl apply -f "${DRY_RUN_DIR}"
+
+The native dry run will generate the deployment manifests, but it will not create the target NKP management-cluster VMs on AHV.
+
+Sources:
+
+Creating a New Cluster in an Air-gapped Environment
+
+How to Deploy a Kubernetes Cluster in the Nutanix Kubernetes Platform Using Terraform – Nutanix.dev
+
+## Prompt:
+9/5/2026, 10:59:58 PM
+
+I deployed NKP 2.18 today, and it was a bundle-based air-gapped environment. I was getting error. The first VM gets created. After that, it just says waiting for the infrastructure to be ready, and it never comes back. 30 minutes it waits and it goes away. So I have used the config file, and using kubectl config, I logged into the first machine. When I'm checking on the logs, I see one particular replica sync pod is init zero slash two. So when I'm checking the logs, and what I see is, it says that it couldn't reach the registry. But in the install command, I have used air gap. But why it is trying to reach the registry, I have no idea. And I started a new deployment on 2.16, and exactly the same error. So can you find it out what it is happening? Since it is a dark site, I was not able to take the logs or take any artifacts. This is what it is there in my memory. Can you please check on that?
+
+## Response:
+9/5/2026, 11:00:18 PM
+
+I’ll compare your earlier bootstrap failure pattern with NKP 2.18 air-gapped behavior, focusing on why registry access may still occur despite --airgapped and local bundles.
+
+Your earlier successful no-Harbor deployment also created two registry-system pods, so registry activity is expected; the likely issue is seeding or reaching NKP’s internal mirror.
+
+Tracing registry behavior
+
+I’m reviewing the prior deployment evidence and focusing on the registry-sync and infrastructure-waiting messages. The earlier air-gapped bundle flow created an internal registry and OCI mirror without requiring Harbor, which seems directly relevant here.
+
+Validating registry synchronization
+
+I’m checking whether the replica-sync stage copies images from the bootstrap registry into the cluster’s highly available registry. Repeated failures across versions point more toward connectivity, DNS, routing, firewall, TLS, or proxy configuration than bundle contents.
+
+Planning diagnostics
+
+I’m narrowing the investigation to the replica-sync pod’s exact registry endpoint, then comparing DNS, routing, ports, TLS, and firewall behavior from the first control-plane VM and bastion.
+
+Traced registry behavior, validated synchronization, and planned diagnostics
+
+Searched deployment file for replica sync evidence
+
+Searching the web
+
+HM Land Registry
+Mirantis - Enterprises rarely lose the AI race on the model. ...
+Minecraft Nickel Plate Road NKP 765 Steam Train Tutorial
+Inspiring and rewarding: my life as an HM Land Registry ...
+We are getting volume mount CSI errors when our ...
+NKP Presets Master thread (Infos-Links-Demos... ...
+John Groves - Working with TfW at EAI Projects
+Nationally Determined Contributions Registry
+Anyone using NKP Starter? : r/nutanix
+CBAM Registry - Taxation and Customs Union
+From nothing to production: Build, test, and deploy a full ...
+NKP - SUNDAY SESSIONS Our closing song ...
+ESAC Registry of Open Publishing Agreements
+re:Invent 2025: The Growth of Epic on AWS and Healthcare ...
+Union Registry - Climate Action - European Commission
+Nikki Zabel - 📈 Quantitative (Data) Scientist | 🌌 PhD in ...
+Motorola R5 NKP Digital Handheld Radio
+INSPIRE Registry - EU Vocabularies
+Yannis Sirros - Deloitte's enterprise AI infrastructure survey
+
+Creating the Nutanix Kubernetes Platform Management ...
+Nutanix Kubernetes Platform (NKP) | Part 3: Air-Gapped ...
+Deploying NKP in Air-Gapped Environments
+Deploying Nutanix Kubernetes Platform, Internet Connected
+Deploying Nutanix Kubernetes Platform on a Nutanix Cluster
+NKP Post 3: Deploying the NKP mgmt Cluster - Jonas Blog
+Nutanix Kubernetes Platform (NKP) | Cloud Native
+Announcing Nutanix Kubernetes Platform (NKP) 2.14
+Automating Deployment of Nutanix Kubernetes Platform ...
+Kubernetes
+Kubectl
+
+Unified Service Deployment Across Carousell Group - Medium
+Geo-replication in Azure Container Registry
+distribution/distribution: The toolkit to pack, ship, store, and ...
+Image Registry Design for Nutanix Kubernetes Platform
+Harbor Registry Sync: Replicating Images across locations
+Deploy a registry server | CNCF Distribution
+Authentication and authorization | OpenShift Container Platform | 4.16
+How pod replicas sync with each other - Kubernetes?
+Container registry for a secondary site
+Deploying NKP in Air-Gapped Environments
+OpenShift Enterprise v3 Lab Configuration: Innovate Faster, Deliver ...
+Harbor
+Hydrating a Data Lake using Log-based Change Data Capture ...
+How to Set Up an Internal Container Registry for Air- ...
+Nutanix Kubernetes Platform (NKP) | Part 1: Architecture & ...
+Designing Data and Analytics Ecosystems for High Volume ...
+Container Registry Redundancy for Kubernetes Clusters
+Private Container Registry on Kubernetes | K8s Recipes
+Nutanix Data Services for Kubernetes (NDK) 2.0
+Resume - Chanwoo Noh | Chanwoo Noh
+Geo Container Registry Repository Replication Sync and ...
+Container registry · Replication · Geo · Administration · Help
+Aurora Gaffney's home on the web
+Real-time replication of Kubernetes cluster
+Design Draft - Registry Operator
+Nutanix Kubernetes Platform Deployment - Part 2 - Polar Clouds
+
+Certify AI-Powered Email Authentication Exam Prep Tool
+Alert - A150006 - AcropolisVSwitchConfigFailed
+Minecraft Nickel Plate Road NKP 765 Steam Train Tutorial
+[ KB IT's your life 7기] 백엔드 개발자도 프론트 모르면 방에 ...
+NKP Presets Master thread (Infos-Links-Demos... ...
+Docker Rate Limit Mitigation with Kubermatic
+Meet Heather, special guest artist at the "NKP Creating ...
+How to Specify Private Registries? · Issue #1689
+Anyone using NKP Starter? : r/nutanix
+How to manage Linux container registries
+Motorola R5 NKP Digital Handheld Radio
+ImagePullBackOff Troubleshooting Guide | K8s Recipes
+
+Air-Gapped or Non-Air-Gapped Environment
+
+Investigating official guidance
+
+I’m looking for authoritative documentation on internal registries, replica synchronization, and air-gapped bootstrap behavior. I’ll use that evidence to separate expected architecture from environment-specific connectivity failures.
+
+Investigated official guidance
+
+Searching the web
+
+Creating the Nutanix Kubernetes Platform Management ...
+rke2-server service start failing due to failed to get unit file ...
+ssl certificate - Default CA Cert Bundle Location
+So, my asset bundle started duplicating my jobs : r/databricks
+Using registry mirrors | Security Best Practices for ...
+Wicker Mothman Bundle Review & Weekly Offers! | Fallout 76
+Successfully upgrade OpenShift cluster on a disconnected ...
+unable to load script from assets index.android.bundle
+
+Creating the Nutanix Kubernetes Platform Management ...
+Run NKP Anywhere (Part 2) - Build Your Nutanix Based ...
+Nutanix AHVでのNKP Management Clusterの展開(CLI版 ...
+Scalability and performance | OpenShift Container Platform | 4.21 | Red Hat Documentation
+OpenShift Container Platform-4.19-Scalability and Performance | PDF | Scalability | Red Hat
+do280-3.9-student-guide-withoutwater.pdf - PDFCOFFEE.COM
+
+Preparing a Local Registry Mirror
+Working with bundle images - Developing Operators
+Certify AI-Powered Email Authentication Exam Prep Tool
+Truck icon art bundle image set – Royalty-Free Vector
+[ KB IT's your life 7기] 백엔드 개발자도 프론트 모르면 방에 ...
+Kids playing different sports and activities set
+Using registry mirrors | Security Best Practices for ...
+Docker Rate Limit Mitigation with Kubermatic
+Runtime (CRI) - Documentation
+How to Create Online Course Bundles | LMS Platform
+How to Specify Private Registries? · Issue #1689
+Airbrush Png, Simply Blessed, Blessed Mama, Digital ...
+
+Searched 19 websites
+
+Searching the web
+
+Nutanix Kubernetes Platform 2.18 - Creating a Bastion Host
+
+Air-Gapped or Non-Air-Gapped Environment - Nutanix Support
+
+Creating the Nutanix Kubernetes Platform Management ...
+GraalVM Community Edition Container Images
+Internal Registry vs Private Registry : r/openshift
+Mohamed Tariq - Senior Engineer at Tata Consultancy ...
+Abhinav Paranjpe - AWS | Solutions Architect | Devops | Git
+Deploy failing with registry connection refused error
+Is it possible to run jobs within a container from a saved ...
+Red Hat OpenShift Service Registry demo
+Improve container image pull performance in Azure ...
+The API Server validates the request • Cluster state is ...
+How to specify registry while doing npm install with git ...
+
+Air-Gapped or Non-Air-Gapped Environment
+
+Not all real estate growth comes from chasing the outskirts. ...
+A journey to Syn v2, a better Erlang & Elixir Process Registry ...
+NKP Presets Master thread (Infos-Links-Demos... ...
+Failed to connect to ESP32: Wrong boot mode detected ...
+Meet Heather, special guest artist at the "NKP Creating ...
+[Config Support]: Frigate integration Failed to connect
+Schema Registry, Linking, and Validation in Your Cloud
+NKP 125-0,6-1 | Vents Global
+COMO RESOLVER O ERROR "Failed to Connect to Server ...
+Re: How to restore the splunkdb from tape backup - Linux
+Charlie Robbins - Engineer 🏗️ Leader🧘Founder 🧗
+Hi all I am trying to deploy an RKE2 cluster on vSphere via ...
+Apicurio Registry capacity planning and sizing guide
+PSRule for Azure - Azure.ACR.ReplicaLocation
+
+PULL-UPS FOR BEGINNERS | 5 Easy Tips to Perform ...
+Creating the Nutanix Kubernetes Platform Management ...
+Using CellProfiler 4.0.0rc9 as a Python Package for Batch ...
+Google Earth Engine 기반 랜덤 포레스트 알고리즘을 활용한 ...
+Bundled-Images Based Geo-Positioning Method for ...
+Upper body push and pull strength ratio in recreationally ...
+350-501 SPCOR Lab Guide 2026: 120 GB Became 14 GB
+Pull and Bear: PULL&BEAR United Kingdom | New Collection ...
+Quaese/QP-Memory-WebComponent: A little JavaScript ...
+Rescuers pull Chinese worker, Nepali woman from flood ...
+Multi-Sensor Satellite Image Classification Using Random ...
+
+Port of Rotterdam | De haven van Rotterdam
+Internal Registry vs Private Registry : r/openshift
+Nutanix Kubernetes Platform 2.18 - Workspaces
+Why AI Connectivity Matters
+Port.io
+Operational Technology | Secure connectivity principles for ...
+Whitney Port: Home
+Deploy failing with registry connection refused error
+Connectivity UK | 5G Superfast Broadband | Next Day Delivery
+Port of Amsterdam
+Pull image from internal registry by GitLab runner pod #3223
+
+Confirming the architecture
+
+I’m finding strong documentation that bundle-based air-gapped NKP deploys an internal registry mirror. Therefore, replica-sync failing to reach a registry is expected behavior only if that endpoint is inaccessible, unresolved, blocked, or misconfigured.
+
+Searched 1 website
+
+Searching the web
+
+Internal Medicine Orders Lunch
+fontconfig 2.18.1 broke generic font aliases (sans-serif/ ...
+2025 Global Report on Internal Displacement (GRID) | IDMC
+Internal Medicine I - Ulm University Hospital
+SYNC® 3 and SYNC | Smart Entertainment & Vehicle ...
+Metrics for replica sync - ES 7.0.1
+Institute of Internal Combustion Engines and Fuel Cells
+This is SYNC. I think this is the start of something wild. I ...
+UniFi Protect UDM-PRO Drive Encryption & Event Replica ...
+Microservice replica sync
+Sync Errors with offline maps
+rclone sync
+Internal Market Information System (IMI) - The EU Single Market
+
+Deploying Nutanix Kubernetes Platform using UI from ...
+Nutanix Kubernetes Platform (NKP) 2.16.1
+Nutanix Kubernetes Platform (NKP) | Part 2
+Deploying NKP in Air-Gapped Environments
+Automating Deployment of Nutanix Kubernetes Platform ...
+Nutanix Kubernetes Platform Deployment - Part 2 - Polar Clouds
+Run NKP Anywhere (Part 3) – From CLI-Based Lab to Fully ...
+LPAR2RRD
+Docker (Software)
+
+Geo-replication in Azure Container Registry
+[bitnami/redis] Failing Readiness / Liveness probes #12186
+Configuring a registry | CNCF Distribution
+How pod replicas sync with each other - Kubernetes?
+Harbor Registry Sync: Replicating Images across locations
+Tanzu for Postgres on Kubernetes - Broadcom TechDocs
+ReplicaSet
+Abyss Learning - Interactive Roadmaps & Software ...
+distribution/distribution - Docker Image
+Container Registry Redundancy for Kubernetes Clusters
+How to Set Up an Internal Container Registry for Air- ...
+容器是什么？赶快去读一读这本《第一本Docker书》 - 华为云
+Private Container Registry on Kubernetes | K8s Recipes
+Real-time replication of Kubernetes cluster
+kubernetes中使用Helm搭建Redis集群原创
+Private container registry | OVHcloud UK
+Geo Container Registry Repository Replication Sync and ...
+Harbor is extending its reach with key image distribution ...
+Keeping External Systems in Lockstep with Kubernetes
+Container registry for a secondary site
+Deploying CData Sync in a Kubernetes Environment
+
+Searched 13 websites
+
+Searched GitHub for Replica-Sync Registry
+
+Inspected Nutanix bundle scripts and registry references
+
+Searching the web
+
+Air-Gapped or Non-Air-Gapped Environment
+Internal Registry vs Private Registry : r/openshift
+Certify AI-Powered Email Authentication Exam Prep Tool
+Deploy failing with registry connection refused error
+[ KB IT's your life 7기] 백엔드 개발자도 프론트 모르면 방에 ...
+Setting up an image registry | IBM Cloud Docs
+Using registry mirrors | Security Best Practices for ...
+Docker Rate Limit Mitigation with Kubermatic
+Red Hat OpenShift Service Registry demo
+Runtime (CRI) - Documentation
+Pull image from internal registry by GitLab runner pod #3223
+How to specify registry while doing npm install with git ...
+
+How to Generate a Support Bundle on Data Domain
+Nutanix Kubernetes Platform 2.18 - Load Balancers
+Help installing Bootstrap on Rails 8.0.0
+HM Land Registry
+Generate a support bundle | Grafana Alloy documentation
+React Bootstrap Tutorial
+Sustainability-Linked Bond Principles (SLBP) »
+Generate an EKS Anywhere support bundle
+Bootstrap 6 feedback · twbs · Discussion #42090
+Nationally Determined Contributions Registry
+CBAM Registry - Taxation and Customs Union
+Modern slavery statement registry - GOV.UK
+Generate a Support Bundle | Apstra 6.0
+Union Registry - Climate Action - European Commission
+INSPIRE Registry - EU Vocabularies
+Ambient Voice Technology Self-Certified Supplier Registry
+Overriding Bootstrap Styles in Service Portal
+
+Automate infrastructure provisioning using code.
+generalized Buffalo Fractal #fractal #animation
+Mirantis - Enterprises rarely lose the AI race on the model. ...
+Struggling with Postgres on a new deployment : r/awx
+NKP Presets Master thread (Infos-Links-Demos... ...
+We are getting volume mount CSI errors when our ...
+CSM PowerFlex node pods are stuck at init:0/2
+From nothing to production: Build, test, and deploy a full ...
+John Groves - Working with TfW at EAI Projects
+Why do these pods have status "Init:0/2"
+re:Invent 2025: The Growth of Epic on AWS and Healthcare ...
+rook-ceph-osd-prepare pods in init state after completion ...
+Nikki Zabel - 📈 Quantitative (Data) Scientist | 🌌 PhD in ...
+NKP - SUNDAY SESSIONS Our closing song ...
+
+Searched 12 websites
+
+Investigated registry sync implementations, configuration, initialization failures, and related releases
+
+Interpreting sync behavior
+
+I’m connecting the Init:0/2 state to NKP’s registry-sync design: one init container waits for the destination registry, while another forwards access so images can synchronize. This means the visible pod may be downstream of an earlier control-plane or registry-readiness failure, not necessarily the root cause.
+
+Interpreted sync behavior
+
+Investigated registry installation lifecycle failure and reviewed handler conditions
+
+Searching the web
+
+Nutanix Support & Insights
+Nutanix Kubernetes Platform (NKP) 2.16.1 | Nutanix Community
+
+Searched 2 websites
+
+Investigated air-gapped registry mirroring and searched GitHub for Konvoy bundle pushers
+
+Searching the web
+
+AEA RCT Registry
+Battlefield 6 Stutter Fix, Known Issues, & DICE Nerf ...
+How to check current status of LCM upgrade operation
+Nationally Determined Contributions Registry
+Entra Connect 2.6.84.0, known issues?
+Gold Star Family Registry
+padohmmp - Oracle B2C Service
+Mirror - App Store - Apple
+Everton transfer news: Toffees eye shock move for free ...
+Tableau known issues link | Salesforce Trailblazer Community
+Mirror
+
+Air-Gapped or Non-Air-Gapped Environment
+[FEATURE] Opt-in to pull internal k3d images from registry ...
+How to setup docker registry as mirror server
+
+Troubleshooting: Cluster Management
+Blog | Winson Dabbles
+7-Zip CVE-2026-14266 Update Released
+Avoid These Kubernetes Anti-Patterns: A Guide for ...
+Nutanix - NKP : NKP diagnose bundle et outil d'analyse
+Nutanix - NKP : NKP diagnose bundle et outil d'analyse - Nuta Fr
+
+Making the Nutanix Air-gapped Cluster Self-Managed
+What are the cheapest, most DM-Infuriating Command ...
+The Command Zone 379 | Magic: the Gathering EDH ...
+GUIDANCE DOCUMENTS
+완주군 보건소 > 열린광장 > 의료기관, 약국 공지사항 > 2024 ...
+КБ-16677 Комплект для
+КБ-16677 Набор оформительский А3 С годом Змеи! ...
+New KB Articles Published on Week Ending April 20, 2024
+
+We need to talk: Can we standardize NO_PROXY?
+source-controller Deployment manifest expects the default ...
+HM Land Registry
+What does it mean for proxy server to be of "HTTPS" type?
+Nationally Determined Contributions Registry
+How to set a proxy in Visual Studio Code (Server Link)
+Can you configure NO_PROXY in NPM?
+Cluster local issue with Knative Eventing v0.9.0
+ESAC Registry of Open Publishing Agreements
+Powershell script to pull an exact registry key from a target ...
+How to fix "join-request to cluster-local join server failed"
+FME and the HTTP_PROXY, HTTPS_PROXY and ...
+Ambient Voice Technology Self-Certified Supplier Registry
+
+Searched 11 websites
+
+Troubleshot air-gapped cluster bootstrap and reviewed feature history
+
+Searching the web
+
+How to use the fleet command in Copilot CLI | GitHub demo
+NKP Presets Master thread (Infos-Links-Demos... ...
+Nutanix Kubernetes Platform 2.18 - Load Balancers
+MyBiz Colorado
+Using CLI to manage AWS instead of Management Console?
+Meet Heather, special guest artist at the "NKP Creating ...
+European Cancer Inequalities Registry | ECIR - European ...
+Cannot get admin/cli/cron.php to run
+Nationally Determined Contributions Registry
+CBAM Registry - Taxation and Customs Union
+NKP - SUNDAY SESSIONS Our closing song ...
+Xchange prevention registry - European Union Drugs Agency
+Motorola R5 NKP Digital Handheld Radio
+Union Registry - Climate Action - European Commission
+Easy Chair
+INSPIRE Registry - EU Vocabularies
+NKP DEVELOPMENTS LTD overview - Companies House
+Airborne Hazards and Open Burn Pit Registry - VA Public Health
+
+Interpreting failure signatures
+
+I’m mapping likely error text to causes: certificate errors suggest missing registry CA trust; refusals suggest an unavailable service; timeouts indicate routing or firewall issues; DNS failures indicate name resolution; missing manifests point to bundle mismatch.
+
+Checking bundle compatibility
+
+I’m verifying whether the CLI, bundle, bootstrap image, and required platform images match exactly. A mismatch or incomplete bundle can produce missing manifests, while registry reachability errors still indicate infrastructure connectivity.
+
+Interpreted failure signatures and checked bundle compatibility
+
+Searching the web
+
+Unable to load script from assets index.android.bundle ...
+Nutanix Kubernetes Platform 2.18 - Load Balancers
+Configure TKG Clusters Authentication and RBAC using WS1 ...
+How to bundle debug build without packager running #678
+NCP-CN-6.10無料問題集「Nutanix Certified Professional
+Exam NCP-CN-6.10 Topic 1 Question 118 Discussion
+Nutanix NCP-CN Pre-Exam Practice Tests | Prep4cram
+Bundle Of Shoe Clips TikTok Shop - Six Croc Charms
+Nutanix NCP-CN v6.10 Exam Practice Questions (P. 7)
+Free Practice Questions for Nutanix NCP-CN Exam
+Cloud Native (NCP-CN-6.10) Exam Preparation
+
+Battlefield 6 Stutter Fix, Known Issues, & DICE Nerf ...
+[FEATURE] Opt-in to pull internal k3d images from registry ...
+EKS: Prerequisites and Permissions
+Mirror Image is a lot more powerful than I thought ...
+Known Issues
+Mirror
+The Mirror: The Heart of Britain
+
+Searched 18 websites
+
+Worked for 10m 30s
+
+What is happening
+
+Your --airgapped option is most likely working as designed. In NKP, air-gapped does not mean registry-free. It means that NKP must not pull images directly from public registries. The air-gapped bundle is used to populate an NKP-managed internal registry mirror, and the target cluster pulls its required images from that internal registry. NKP 2.18 documentation explicitly describes the internal registry being populated from the air-gapped bundle; when an external mirror is not supplied, NKP can deploy an in-cluster private registry automatically. (Nutanix Portal)
+
+This also matches your previously successful NKP 2.16.1 bundle-based deployment. Even though you did not use Harbor, the completed management cluster had these two internal registry pods:
+
+registry-system
+cncf-distribution-registry-docker-registry-0   2/2 Running
+cncf-distribution-registry-docker-registry-1   2/2 Running
+
+ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+So the registry mentioned in your new failure is probably the automatically created NKP internal registry, not Harbor and not necessarily an internet registry.
+
+What Init:0/2 means
+
+I found the component that closely matches your memory: the registry syncer.
+
+The current Nutanix registry-syncer definition contains two init containers:
+
+wait-for-registry
+
+port-forward-registry
+
+The first init container waits for this pod in the new target cluster to become Ready:
+
+registry-system/cncf-distribution-registry-docker-registry-0
+
+The second init container then port-forwards the target registry’s headless service to:
+
+127.0.0.1:5000
+
+Only after those two init containers are ready does regsync synchronize images from the source internal registry into the target cluster’s internal registry.
+
+Therefore:
+
+Init:0/2
+
+does not automatically mean that the sync application itself is broken. It normally means that wait-for-registry has not completed because the new cluster’s destination registry pod is not Ready or the bootstrap cluster cannot reach the new cluster API to check it.
+
+The internal registry is deployed as a StatefulSet with two replicas, and Regsync synchronizes OCI artifacts between the registries/replicas. Nutanix’s implementation uses the registry-system namespace, service port 443, and headless registry port 5000.
+
+Most probable failure sequence
+
+Based on what you remember, this is the likely sequence:
+
+Bastion
+  |
+  | Creates temporary/bootstrap Kubernetes cluster
+  | Loads NKP bundle into bootstrap internal registry
+  v
+First target control-plane VM created on AHV
+  |
+  | Must initialize Kubernetes and reach the bundle registry
+  | Must start target cluster's internal registry
+  v
+Target registry never becomes Ready
+  |
+  | registry-syncer remains Init:0/2
+  v
+NKP continues showing:
+"Waiting for infrastructure to be ready"
+  |
+  v
+Outer installation timeout is reached
+and the deployment/bootstrap resources are cleaned up
+
+The Nutanix registry lifecycle hook deploys the destination registry only at the AfterControlPlaneInitialized phase. Therefore, if the first control-plane VM has not successfully initialized its API server and essential networking, the destination registry cannot become Ready and wait-for-registry remains blocked.
+
+My leading diagnosis is:
+
+The first target control-plane VM cannot successfully access the bootstrap/internal registry endpoint-or cannot start its own target registry because of registry reachability, containerd mirror configuration, certificate trust, target API reachability, or proxy bypass configuration.
+
+The registry-syncer pod is probably showing the consequence of that problem, rather than being the original cause.
+
+Because you reproduced essentially the same failure with NKP 2.18 and NKP 2.16, it is less likely to be a defect isolated to NKP 2.18. It points toward something common to both attempts:
+
+Bastion or first-VM network reachability
+
+An incorrectly advertised internal-registry IP
+
+Firewall or ACL restrictions
+
+Incorrect NO_PROXY
+
+Registry CA trust in containerd
+
+Wrong or non-NIB-prepared node image
+
+Mismatched CLI, bootstrap image, and air-gapped bundles
+
+Reusing an incompatible VM image between NKP versions
+
+The NKP 2.18 documentation specifically notes that the VM template must be created using Nutanix Image Builder for registry-mirror functionality. (Nutanix Portal)
+
+What to run during the next deployment
+
+Do this while the installer is still showing waiting for infrastructure to be ready, before the approximately 30-minute cleanup.
+
+1. Use the bootstrap kubeconfig
+
+export KUBECONFIG="/path/to/<cluster-name>-bootstrap.conf"
+
+kubectl config current-context
+kubectl cluster-info
+
+Then inspect the Cluster API objects:
+
+kubectl get clusters -A
+kubectl get machines -A -o wide
+kubectl get kubeadmcontrolplanes -A
+kubectl get nutanixclusters -A 2>/dev/null || true
+kubectl get nutanixmachines -A 2>/dev/null || true
+
+Get the conditions rather than relying only on the summary columns:
+
+kubectl describe cluster -A
+kubectl describe kubeadmcontrolplane -A
+kubectl describe machine -A
+
+Collect the recent events:
+
+kubectl get events -A \
+  --sort-by=.metadata.creationTimestamp | tail -n 250
+
+Look particularly for:
+
+InfrastructureReady=False
+ControlPlaneReady=False
+WaitingForInfrastructure
+FailedCreate
+ImagePullBackOff
+ErrImagePull
+FailedMount
+x509
+connection refused
+i/o timeout
+no route to host
+
+2. Locate the registry syncer pod
+
+kubectl get pods -A -o wide | \
+grep -Ei 'registry.*sync|sync.*registry|registry-system'
+
+Set the exact namespace and pod:
+
+export SYNC_NS="<namespace-from-output>"
+export SYNC_POD="<registry-syncer-pod-name>"
+
+Display the two init containers:
+
+kubectl -n "$SYNC_NS" get pod "$SYNC_POD" \
+  -o jsonpath='{range .spec.initContainers[*]}{.name}{"\n"}{end}'
+
+Expected names should be similar to:
+
+wait-for-registry
+port-forward-registry
+
+Check which one is active:
+
+kubectl -n "$SYNC_NS" get pod "$SYNC_POD" -o json | \
+jq -r '
+.status.initContainerStatuses[] |
+[
+  .name,
+  (.state | keys[0]),
+  (.state.waiting.reason // .state.terminated.reason // .state.running.startedAt // "")
+] | @tsv
+'
+
+Check the first init-container log:
+
+kubectl -n "$SYNC_NS" logs "$SYNC_POD" \
+  -c wait-for-registry \
+  --tail=200
+
+Check the second init container too:
+
+kubectl -n "$SYNC_NS" logs "$SYNC_POD" \
+  -c port-forward-registry \
+  --tail=200
+
+At Init:0/2, the second command may only return:
+
+PodInitializing
+
+That is expected because it has not started yet.
+
+Finally:
+
+kubectl -n "$SYNC_NS" describe pod "$SYNC_POD"
+
+3. Extract the target-cluster kubeconfig used by the syncer
+
+The syncer mounts a Secret containing the new target cluster’s admin kubeconfig. You can identify that Secret directly from the pod:
+
+export TARGET_KCFG_SECRET="$(
+  kubectl -n "$SYNC_NS" get pod "$SYNC_POD" \
+    -o jsonpath='{.spec.volumes[?(@.name=="kubeconfig")].secret.secretName}'
+)"
+
+echo "$TARGET_KCFG_SECRET"
+
+Check that it exists:
+
+kubectl -n "$SYNC_NS" get secret "$TARGET_KCFG_SECRET"
+
+Extract it:
+
+umask 077
+
+kubectl -n "$SYNC_NS" get secret "$TARGET_KCFG_SECRET" \
+  -o jsonpath='{.data.value}' | base64 -d \
+  > /tmp/nkp-target.conf
+
+chmod 600 /tmp/nkp-target.conf
+
+Test whether the new control-plane API is reachable:
+
+kubectl --kubeconfig=/tmp/nkp-target.conf \
+  get --raw='/readyz?verbose'
+
+Then check its internal registry:
+
+kubectl --kubeconfig=/tmp/nkp-target.conf \
+  -n registry-system get statefulset,pods,services,endpointslices -o wide
+
+This test gives a very clear split:
+
+Target kubeconfig times out against port 6443: control-plane VIP, kube-vip, firewall, routing, or API server problem.
+
+Target API works, but registry-system does not exist: registry lifecycle hook has not installed it or has failed.
+
+Registry pod exists but is ImagePullBackOff: first VM cannot pull the registry image from the bootstrap mirror.
+
+Registry pod is Pending: usually storage/PVC, scheduling, or CNI.
+
+Registry pod is Running but syncer still waits: target kubeconfig access, RBAC, pod Ready condition, or port-forward problem.
+
+4. Check the target registry pod
+
+When it exists:
+
+kubectl --kubeconfig=/tmp/nkp-target.conf \
+  -n registry-system get pods -o wide
+
+Describe the first replica:
+
+kubectl --kubeconfig=/tmp/nkp-target.conf \
+  -n registry-system describe pod \
+  cncf-distribution-registry-docker-registry-0
+
+Check all of its containers:
+
+kubectl --kubeconfig=/tmp/nkp-target.conf \
+  -n registry-system logs \
+  cncf-distribution-registry-docker-registry-0 \
+  --all-containers \
+  --tail=200
+
+Also inspect its events:
+
+kubectl --kubeconfig=/tmp/nkp-target.conf \
+  -n registry-system get events \
+  --sort-by=.metadata.creationTimestamp
+
+Check the source registry in the bootstrap cluster
+
+While your original bootstrap kubeconfig is exported:
+
+export KUBECONFIG="/path/to/<cluster-name>-bootstrap.conf"
+
+Run:
+
+kubectl -n registry-system get \
+  statefulset,pods,services,endpointslices -o wide
+
+Both source registry replicas should eventually be Ready:
+
+cncf-distribution-registry-docker-registry-0
+cncf-distribution-registry-docker-registry-1
+
+Check their logs:
+
+for POD in $(kubectl -n registry-system get pods -o name); do
+  echo
+  echo "===== $POD ====="
+  kubectl -n registry-system logs "$POD" \
+    --all-containers \
+    --tail=100
+done
+
+Test the bootstrap registry locally using port-forwarding:
+
+kubectl -n registry-system port-forward \
+  service/cncf-distribution-registry-docker-registry \
+  5443:443
+
+In another terminal:
+
+curl -vk https://127.0.0.1:5443/v2/
+
+Any of these responses proves the service is reachable:
+
+HTTP 200
+HTTP 401
+{}
+
+These indicate different authentication behavior, but all prove that the TCP/TLS path exists.
+
+These indicate a problem:
+
+Connection refused
+Operation timed out
+No endpoints available
+TLS handshake failure
+
+On the first AHV control-plane VM
+
+The most valuable logs will probably be on the first VM because that machine must pull the initial images and initialize the target control plane.
+
+Run:
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei 'registry|mirror|pull|resolve|x509|timeout|refused|manifest|unauthorized' | \
+tail -n 300
+
+Then:
+
+sudo journalctl -u kubelet -b --no-pager | \
+grep -Ei 'image|pull|registry|x509|timeout|refused|failed' | \
+tail -n 300
+
+Check the complete recent logs when the filtered command hides too much:
+
+sudo journalctl -u containerd -b --no-pager | tail -n 500
+sudo journalctl -u kubelet -b --no-pager | tail -n 500
+
+Check container state:
+
+sudo crictl pods
+sudo crictl ps -a
+sudo crictl images
+
+Inspect the mirror and trust configuration injected into containerd:
+
+sudo find /etc/containerd/certs.d \
+  -maxdepth 3 \
+  -type f \
+  -name hosts.toml \
+  -print \
+  -exec sed -n '1,200p' {} \;
+
+Also check:
+
+sudo grep -RniE \
+'registry|mirror|server|host|ca|skip_verify' \
+/etc/containerd /etc/systemd/system/containerd.service.d \
+2>/dev/null
+
+Interpret the exact registry address
+
+The hostname or address in the error will identify the failing leg.
+
+Error destination
+What it usually means
+cncf-distribution-registry-docker-registry.registry-system.svc.cluster.local:443
+Bootstrap/source internal registry service, DNS, endpoint, or TLS problem
+127.0.0.1:5000
+Registry syncer’s port-forward to the target registry is not working
+Target control-plane VIP on :6443
+Bootstrap cluster cannot reach the new Kubernetes API
+Bastion IP plus a registry port
+New VM cannot reach the bundle registry exposed through the Bastion/bootstrap environment
+ghcr.io, quay.io, docker.io, or another public registry
+Mirror configuration was not applied, an image is absent from the bundle, or the wrong bundle was supplied
+x509: certificate signed by unknown authority
+Internal registry CA was not installed or containerd is not using the correct CA
+connect: connection refused
+Address is reachable, but the registry/API is not listening
+i/o timeout or no route to host
+Firewall, routing, VLAN, or wrong advertised IP
+no such host
+DNS configuration problem
+manifest unknown or not found
+Required image is missing from the supplied bundle or versions do not match
+401 or 403
+Registry authentication or authorization issue
+
+The Nutanix registry implementation creates and distributes its own registry CA to the nodes so containerd can trust the registry. If that CA distribution or generated hosts.toml configuration fails, the first VM will report an x509 error.
+
+Check proxy variables carefully
+
+Even in a dark site, old proxy variables may remain on the Bastion or get injected into the bootstrap cluster.
+
+On the Bastion:
+
+env | grep -iE '^(http|https|no)_proxy='
+env | grep -iE '^(HTTP|HTTPS|NO)_PROXY='
+
+Check Docker’s environment:
+
+systemctl show docker --property=Environment
+systemctl show containerd --property=Environment
+
+Check the bootstrap control-plane container:
+
+docker ps --format '{{.Names}}' | grep control-plane
+
+Then:
+
+docker inspect <bootstrap-control-plane-container> | \
+jq -r '.[0].Config.Env[]' | grep -i proxy
+
+When a proxy is configured, NO_PROXY must cover at least:
+
+127.0.0.1
+localhost
+.svc
+.cluster.local
+Bastion IP
+Prism Central IP/FQDN
+control-plane VIP
+AHV node subnet
+Pod CIDR
+Service CIDR
+internal registry hostname/IP
+
+A missing .svc or .cluster.local entry can cause internal registry traffic to be incorrectly sent toward a proxy.
+
+Verify the VM image
+
+This is particularly important for your case.
+
+Confirm that:
+
+The NKP 2.18 attempt used an NKP 2.18-supported, NIB-prepared node image.
+
+The NKP 2.16 attempt used an NKP 2.16-compatible image.
+
+You did not reuse the same old image for both attempts merely by changing the CLI and bundle.
+
+The image has the expected containerd mirror handling.
+
+The image is not a generic Rocky or Ubuntu cloud image uploaded directly to Prism without NIB preparation.
+
+NKP 2.18 documentation states that the VM template must be produced using Nutanix Image Builder to use the registry-mirror functionality. (Nutanix Portal)
+
+Verify all deployment artifacts belong to one version
+
+For the NKP 2.18 attempt, all of these should be 2.18 artifacts:
+
+NKP CLI
+Konvoy bootstrap image
+Konvoy image bundle
+Kommander image bundle
+Nutanix/provider bundle where required
+NIB-prepared OS image
+
+Check:
+
+nkp version
+
+Check filenames:
+
+find /data -type f | \
+grep -E 'nkp|konvoy|kommander|bootstrap|bundle' | \
+sort
+
+Verify the paths referenced by your command:
+
+ls -lh \
+  "$NKP_BOOTSTRAP_IMAGE" \
+  "$NKP_KONVOY_BUNDLE" \
+  "$NKP_KOMMANDER_BUNDLE"
+
+Check checksums against the Nutanix-provided checksum file:
+
+sha256sum \
+  "$NKP_BOOTSTRAP_IMAGE" \
+  "$NKP_KONVOY_BUNDLE" \
+  "$NKP_KOMMANDER_BUNDLE"
+
+Do not use a 2.18 CLI with 2.16 bootstrap/bundle content, or the reverse.
+
+Capture evidence before NKP cleans up
+
+Start the deployment with logging:
+
+./deploy_nkp_mgmt.sh 2>&1 | \
+tee "nkp-create-$(date +%Y%m%d-%H%M%S).log"
+
+While it is waiting:
+
+mkdir -p /tmp/nkp-debug
+
+kubectl get pods -A -o wide \
+  > /tmp/nkp-debug/pods.txt
+
+kubectl get events -A \
+  --sort-by=.metadata.creationTimestamp \
+  > /tmp/nkp-debug/events.txt
+
+kubectl get clusters -A -o yaml \
+  > /tmp/nkp-debug/clusters.yaml
+
+kubectl get machines -A -o yaml \
+  > /tmp/nkp-debug/machines.yaml
+
+kubectl get kubeadmcontrolplanes -A -o yaml \
+  > /tmp/nkp-debug/controlplanes.yaml
+
+kubectl cluster-info dump \
+  --all-namespaces \
+  --output-directory=/tmp/nkp-debug/cluster-dump
+
+Generate the NKP diagnostic bundle before cleanup:
+
+nkp diagnose --kubeconfig="$KUBECONFIG"
+
+Nutanix documents nkp diagnose for collecting support data and specifically references support-bundle collection for failed cluster creation. (Nutanix Portal)
+
+Archive your manual evidence:
+
+tar -czf \
+  "/tmp/nkp-debug-$(date +%Y%m%d-%H%M%S).tar.gz" \
+  -C /tmp nkp-debug
+
+My conclusion
+
+This does not look like NKP unexpectedly ignoring --airgapped.
+
+It looks like:
+
+NKP correctly starts its bundle-based internal-registry workflow.
+
+The first target control-plane VM is created.
+
+The target internal registry never becomes Ready-or the bootstrap environment cannot reach it.
+
+registry-syncer remains at Init:0/2, specifically in wait-for-registry.
+
+NKP remains at “waiting for infrastructure to be ready.”
+
+The outer deployment process eventually times out and cleans up.
+
+The first three checks I would perform on the next attempt are:
+
+kubectl -n "$SYNC_NS" logs "$SYNC_POD" \
+  -c wait-for-registry --tail=200
+
+kubectl --kubeconfig=/tmp/nkp-target.conf \
+  get --raw='/readyz?verbose'
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei 'registry|x509|timeout|refused|manifest|resolve' | \
+tail -n 300
+
+The exact registry hostname and error class from those commands will distinguish immediately between target API/VIP, network/firewall, proxy, certificate trust, wrong node image, and missing bundle image.
+
+I also reviewed the complete earlier project export, which was updated on September 4, 2026 and exported on September 5, 2026. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Sources:
+
+Air-Gapped or Non-Air-Gapped Environment
+
+## Prompt:
+9/5/2026, 11:48:43 PM
+
+The pod name is Replica Sync. There is a prefix to it, which is a cluster name, and then Replica Sync. This particular pod is not coming up in the controller first VM. So this is the pod which is responsible to communicate to the Bastion, and Bastion should push the image to it. The push of the image from the Bastion to the controller plane first node is not happening. So can you research on this angle?
+
+## Response:
+9/5/2026, 11:48:48 PM
+
+I’m narrowing this to the exact replica-sync component and the Bastion-to-first-control-plane image path, rather than treating it as a generic registry failure.
+
+I’ll identify what creates <cluster-name>-replica-sync, which registry endpoint it uses, and distinguish confirmed transfer behavior from the likely stall point.
+
+Researching deployment details
+
+I’ll verify the exact replica-sync component, its pod naming, bundle-push behavior, internal registry path, and upgrade sequencing using primary technical sources. I’ll separate documented facts from inferences and keep the explanation focused on automation implications.
+
+Researched deployment details
+
+Searching the web
+
+openshift-installer/docs/user/openstack/README.md ...
+
+Searched 1 website
+
+Tracing the architecture
+
+I’m mapping the air-gapped flow from the bastion’s bootstrap registry to the first target node, while checking whether “Replica Sync” runs on the bootstrap cluster or target VM and what network path it requires.
+
+Traced the architecture
+
+Investigated Nutanix replica synchronization code and pod configurations
+
+Searching the web
+
+AZURE IN TAMIL - SQL DATABASE - FAILOVER GROUPS
+Flow Network Security CVM Memory Recommendation
+Bundle Oti-Bot and accessories Pusher, Basket and Forklift
+Metrics for replica sync - ES 7.0.1
+"Engineered Spare Parts for Seamless Packaging Flow ...
+Microservice replica sync
+Swiss Can Turning Tunnel CTT
+Arc Collector - Sync Replica Internal Error
+MCB-2 XT Fully Automatic Strapping Machine
+Replica sync hangs after initial sync
+Pusher Rc Jet Trainer FMS RC Plane Easy Trainer RTF Learn ...
+Automation and Improved control of Bundle pusher
+LDAP replica not working and is out of sync
+Specific Outcomes and Assessment Criteria
+
+Searched 14 websites
+
+Investigated registry replica synchronization configuration and pod data flow
+
+Searching "konvoybundlepusher"
+
+Downloading and Extracting Air-Gapped Image Bundle
+RackWare SWIFT for Nutanix Kubernetes Platform (NKP)
+Nutanix Enterprise AI 2.6 をデプロイしてみる。Part-02
+Any ideas about CG when support near sync replication?
+Nutanix Kubernetes Platform (NKP)
+
+HM Land Registry
+Sharing our AI expertise - Government Internal Audit Agency
+Air-Gapped or Non-Air-Gapped Environment
+fontconfig 2.18.1 broke generic font aliases (sans-serif/ ...
+Is it true that up to half of people have no inner monologue ...
+Nationally Determined Contributions Registry
+Global Internal Displacement Database | IDMC
+Problem 2.18 Fundamental of Electric Circuits (Alexander
+CBAM Registry - Taxation and Customs Union
+ESAC Registry of Open Publishing Agreements
+ESMA identifies areas for further supervisory convergence on ...
+Union Registry - Climate Action - European Commission
+INSPIRE Registry - EU Vocabularies
+Registry
+Get started with OpenSearch 2.18
+Ambient Voice Technology Self-Certified Supplier Registry
+IRS.gov Small Business
+
+Verifying implementation specifics
+
+I’m checking official documentation and source references for the precise bundle-pusher and replica-sync workflow, especially registry exposure, pod placement, connectivity, and upgrade behavior.
+
+Verified implementation specifics
+
+Searching the web
+
+Creating the Nutanix Kubernetes Platform Management Cluster ...
+
+Creating the Nutanix Kubernetes Platform Management ...
+SyncReplica | ArcGIS Pro documentation
+Nutanix Kubernetes Platform (NKP) | Part 3: Air-Gapped ...
+Synchronize Replica : (Hosted/Registration_Desk)
+air gapped k8s and upgrades : r/kubernetes
+How to Integrate Nutanix Kubernetes Platform with your ...
+Synchronize Replica : (DR4673FL_barge_docSDE)
+Air-Gapped Kubernetes & AI: Building Intelligent Systems in ...
+Database Replication in MarkLogic Server
+How to Secure Kubernetes with Air Gapping
+Replica clusters | CloudNativePG
+A Tale of Two Container Image Tools: Skopeo and Crane
+Understanding Air-gapped Environments in Kubernetes
+NKP Post 5: Provisioning your first Kubernetes cluster in NKP
+Deploying Nutanix Kubernetes Platform with GPUs in an Air ...
+kURL release notes | Replicated
+User Guide > Scaling > Add Replica Node
+Synchronize Replica : (T13123_ごみ焼却場)
+Air-gapped / Regulated Environments
+Deploying Nutanix Kubernetes Platform, Internet Connected
+cdr sync replicate
+nkp-quickstart/nkp-create-mgmt-cluster.sh at main
+What is Air-Gapped Kubernetes? - ARMO Platform
+Disconnected environments | OpenShift Container Platform | 4.17 | Red Hat Documentation
+Situation Room — 2× Acer Veriton GN100 Bridged + NVIDIA Model Bundle | DWS IQ
+VMware Telco Cloud Automation 3.5 - Quick Technical Learning Guide
+
+Clarifying the deployment flow
+
+I’m narrowing this to the likely temporary replica-sync workload: how the bastion’s bundle registry feeds the first target node, where the pod runs, and which connectivity or registry conditions could block completion.
+
+Clarified the deployment flow
+
+Searched 5 websites
+
+Connecting the evidence
+
+I’m comparing the user’s “Replica Sync” description with documented registry behavior and public implementation details, while separating confirmed mechanics from version-specific inferences about why initialization is stuck.
+
+Isolating registry reachability
+
+I’m treating the replica-sync workload as the key path between the bastion and first control-plane node. The strongest suspects are an unreachable advertised endpoint, firewall or VLAN filtering, TLS trust, DNS, proxy exclusions, or mismatched bundle components.
+
+Connected evidence and isolated registry reachability
+
+Investigated NKP replica synchronization and registry syncer implementations
+
+Searching the web
+
+European Cancer Inequalities Registry | ECIR - European ...
+The Gap
+Migrating Linux VMs to AHV
+DNA licensing for air-gapped networks : r/Cisco
+Nationally Determined Contributions Registry
+CBAM Registry - Taxation and Customs Union
+The "opportunity gap" in US public education -- and how to ...
+Union Registry - Climate Action - European Commission
+INSPIRE Registry - EU Vocabularies
+MECM Configuration and Upgrading for Airgapped ...
+Registry
+ICCA Registry
+Gold Star Family Registry
+Bridging The Gap
+
+Preparing a Local Registry Mirror
+[FEATURE] Opt-in to pull internal k3d images from registry ...
+[CI/CD] Why push images to a registry in a deploy stage?](https://www.reddit.com/r/devops/comments/aawwf9/docker_cicd_why_push_images_to_a_registry_in_a/)
+Certify AI-Powered Email Authentication Exam Prep Tool
+Volunteer-Registry
+[ KB IT's your life 7기] 백엔드 개발자도 프론트 모르면 방에 ...
+How to setup docker registry as mirror server
+Krebs - Homepage German Centre for Cancer Registry Data
+Using registry mirrors | Security Best Practices for ...
+Docker Rate Limit Mitigation with Kubermatic
+Self-Hosted Docker Registry: The 15-Minute Setup That ...
+Runtime (CRI) - Documentation
+How to edit registry hives without live running
+Adrian Piper. The Probable Trust Registry: The Rules of ...
+
+Refining the diagnosis
+
+I’m now separating the replica-sync workload from the registry’s own sidecar. The Init:0/2 state most strongly suggests a sync job waiting on registry readiness or connectivity, while exact private installer behavior remains version-dependent.
+
+Refined the diagnosis
+
+Searching "replica-sync" "Nutanix Kubernetes Platform"
+
+Nutanix Data Services for Kubernetes (NDK) 2.0
+How pod replicas sync with each other - Kubernetes?
+Synchronize Replica | ArcGIS REST APIs
+Real-time replication of Kubernetes cluster
+Install Convoy using Kubernetes
+Unable to synchronize replica
+Synchronize Replica
+Replicaset and Deployment are out-of-sync · Issue #117008
+Synchronize Replica : (Hosted/OG_Sweeping_Route)
+Disaster Recovery Strategies for Kubernetes
+Synchronize Replica : (Aluskihid/Kaardilehed_50T)
+Application High Availability with Nutanix Kubernetes ...
+Cross-Cluster Replication Fundamentals
+Asynchronous replication — VolSync documentation
+Synchronize Replica - Feature Service (Operation)
+Any ideas about CG when support near sync replication?
+What do Kubernetes ReplicaSets do? - IONOS
+Synchronize Replica
+redis 17.11.3 · frain-dev/convoy
+Cross-Region Replication - Object Storage Service 3.0 ...
+Nutanix Kubernetes Platform (NKP)
+A Complete Guide to Stateful Workloads on Kubernetes
+
+Searched 14 websites
+
+Inspected Registry Syncer chart metadata
+
+Searching the web
+
+Internal Registry vs Private Registry : r/openshift
+AZURE IN TAMIL - SQL DATABASE - FAILOVER GROUPS
+Sync successful but edits not updated
+Deploy failing with registry connection refused error
+Metrics for replica sync - ES 7.0.1
+Woodland Fairy Image Bundle 14 Watercolor Enchanted ...
+Microservice replica sync
+Pull image from internal registry by GitLab runner pod #3223
+Mac OSX Sparse Disk Image Bundle - FreeFileSync Forum
+Gitlab registry - Infrastructure as Code & Cloud Native
+Sparse Disk Image Bundle
+
+Searched 11 websites
+
+Investigated registry bootstrap and searched GitHub for replica sync variations
+
+Searching the web
+
+Automate infrastructure provisioning using code.
+How to access and troubleshoot a Nutanix Objects/MSP ...
+NKP Presets Master thread (Infos-Links-Demos... ...
+deps/std-path - @wok/helmet-mods - JSR
+Mirantis - Enterprises rarely lose the AI race on the model. ...
+aios-core by @github-repos - coderabbit
+We are getting volume mount CSI errors when our ...
+An Exploration of the NKP 3-Link Trucks
+Use /protocol/{version}.tgz for schema sync instead of per- ...
+John Groves - Working with TfW at EAI Projects
+Anyone using NKP Starter? : r/nutanix
+From nothing to production: Build, test, and deploy a full ...
+NKP - SUNDAY SESSIONS Our closing song ...
+Registry Syncer Helm Chart
+re:Invent 2025: The Growth of Epic on AWS and Healthcare ...
+Nikki Zabel - 📈 Quantitative (Data) Scientist | 🌌 PhD in ...
+Motorola R5 NKP Digital Handheld Radio
+Registry - Glossary · Enterprise AI Orchestration - Prismatic
+
+Searched 18 websites
+
+Investigated NKP configuration, Harbor-free deployment, and air-gapped image synchronization
+
+Searching the web
+
+Differentiating sync components
+
+I’m distinguishing the cluster-prefixed Replica Sync pod from the registry’s own two-container sidecar. Its initialization likely means the first control-plane node cannot reach or trust the bastion’s advertised registry endpoint, though exact private behavior remains unverified.
+
+Differentiated sync components
+
+Searching "nkp_v2.18.0_linux_amd64.tar.gz"
+
+Checking installer internals
+
+I’m investigating whether the cluster-prefixed Replica Sync pod belongs to the private bundle-pusher workflow rather than the registry sidecar. I’m focusing on its endpoint, initialization steps, and first-node connectivity requirements.
+
+Checked installer internals
+
+Searching "nkp-air-gapped-bundle_v2.18.0_linux_amd64.tar.gz"
+
+Checking Nutanix download URL availability
+
+Checked Nutanix download URL availability
+
+Searching "konvoybundlepusher"
+
+Standalone Slot Tracker | NVIDIA Dynamo Documentation
+MCP federation · MCPG
+Standalone Slot Tracker | NVIDIA Dynamo Documentation
+Setting Durability Guarantees
+000771: Cannot delete the replica sync version until it is reconciled and posted with the replica version.—ArcGIS Pro | Documentation
+Nutanix Enterprise AI 2.6 をデプロイしてみる。Part-02：作業用マシンの準備 - NTNX＞日記
+ArcGIS REST API - ArcGIS Services - Create Replica
+NKP The Hard Way - Nutanix Cloud Native and AI Solutions
+BDB replica sync field | Docs
+ArcGIS REST API - ArcGIS Services - Create Replica
+389 Directory Server - LDAP REST API
+Validieren Sie die Widerstandsfähigkeit des Valkey-Clusters auf Azure Kubernetes Service (AKS) mit Locust - Azure Kubernetes Service | Microsoft Learn
+Nutanix Enterprise AI on Cisco Compute Hyperconverged with AMD EPYC Deployment Guide - Cisco
+ArcGIS REST API - ArcGIS Services - Create Replica
+ArcGIS REST API - ArcGIS Services - Create Replica
+
+Assessing the sync path
+
+I’m checking whether the cluster-prefixed Replica Sync pod is part of the private bundle-pusher workflow. If so, its failure most likely reflects first-node reachability, registry trust, endpoint advertisement, or initialization dependencies.
+
+Assessed the sync path
+
+Searching the web
+
+Nutanix Support & Insights
+
+Nutanix Support & Insights
+
+Tracinging replica sync
+
+I’m treating this as a bastion-to-first-node registry failure. The Replica Sync workload likely waits for registry readiness, then copies bundle images; Init:0/2 points to a preflight dependency, not an image-copy failure yet.
+
+Pinpointing the blockage
+
+I’m focusing on the Replica Sync pod’s preflight stage: it likely waits for the target registry, then transfers bundled images from the bastion. The first checks are endpoint reachability, firewall rules, DNS, TLS trust, proxy exclusions, and bundle-version alignment.
+
+Traced replica sync and pinpointed the blockage
+
+Searched 15 websites
+
+Worked for 11m 36s
+
+Yes - the Replica Sync angle is the correct one
+
+Your clarification narrows the failure considerably.
+
+The first AHV control-plane VM being created proves that:
+
+The Bastion can reach Prism Central.
+
+The Prism credentials and infrastructure configuration are accepted.
+
+CAPX can create and power on the VM.
+
+The failure occurs in the next stage: transferring the air-gapped bundle images from the temporary bootstrap environment associated with the Bastion into the internal registry created on the new management cluster.
+
+The --airgapped and --bundle options do not remove registries from the process. NKP 2.18 uses the air-gapped bundle to populate an internal registry mirror so that the cluster can pull images locally. (portal.nutanix.com, portal.nutanix.com) Public Nutanix deployment material also describes the bundle workflow as using an inbuilt CNCF OCI registry and shows the bundle-pusher starting a temporary Docker registry before pushing the bundled images.
+
+The likely data path
+
+For the initial self-managed management-cluster deployment, the flow is approximately:
+
+Air-gapped TAR bundles on Bastion
+               |
+               v
+NKP konvoybundlepusher
+               |
+               v
+Temporary source OCI registry
+in the Bastion/bootstrap environment
+               |
+               v
+<cluster-name>-replica-sync
+               |
+               v
+Destination internal CNCF registry
+on the first control-plane node
+               |
+               v
+Containerd on the NKP nodes pulls
+the required Kubernetes/NKP images
+
+NKP 2.18 includes a component called konvoybundlepusher, which supports the conclusion that this initial image handoff is a distinct part of the NKP create workflow.
+
+The exact source code for the initial management-cluster konvoybundlepusher is not publicly available, so I cannot prove the exact private pod name from source. However, your observed name and status strongly match that stage.
+
+The most important finding: Init:0/2 means copying has probably not started
+
+The public Nutanix registry-sync implementation has two initialization stages:
+
+Init container 1: wait-for-registry
+Init container 2: port-forward-registry
+Main container:   registry-syncer / regsync
+
+The first init container waits for the destination internal registry to become Ready. The second creates a port-forward to the destination registry. Only after both initialization stages succeed does the main Regsync process start copying OCI artifacts.
+
+Therefore:
+
+Init:0/2
+
+usually means:
+
+The actual image synchronization has not begun yet.
+
+The pod is still waiting for a prerequisite. That prerequisite can be either:
+
+The internal registry on the first control-plane node is not Ready.
+
+The temporary/bootstrap environment cannot reach the target Kubernetes API or registry.
+
+The first node cannot pull the minimum images required to start its internal registry.
+
+The sync component cannot reach the source registry presented by the Bastion/bootstrap environment.
+
+So your conclusion that the Bastion-to-controller image handoff is failing is directionally correct, but the first failure may happen before the push begins.
+
+Two similarly named sync functions exist
+
+This distinction is important when you inspect the pod.
+
+Component
+Purpose
+Typical status
+Internal registry replica syncer
+Synchronizes registry replica 0 and replica 1 inside the NKP cluster
+0/2, 1/2, or 2/2
+Cluster-prefixed Replica Sync
+Moves bundle contents from source registry to destination cluster registry
+Init:0/2, then Running
+
+The internal registry StatefulSet has a normal registry container and a Regsync sidecar container. That sidecar synchronizes the two internal registry replicas; it is not primarily the Bastion-to-cluster transfer mechanism.
+
+In your earlier successful NKP 2.16 deployment, the final healthy state showed:
+
+cncf-distribution-registry-docker-registry-0   2/2 Running
+cncf-distribution-registry-docker-registry-1   2/2 Running
+
+ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Your current Init:0/2 cluster-prefixed pod is therefore much more likely to be the temporary bundle-transfer workload, not one of these two final registry replicas.
+
+My leading hypothesis
+
+Because exactly the same failure occurred with both NKP 2.18 and NKP 2.16, the highest-probability cause is an environmental connectivity problem, not a version-specific NKP defect.
+
+The leading possibility is:
+
+The first control-plane node cannot reach the temporary registry endpoint created on the Bastion, or NKP is advertising a Bastion address that is not reachable from the node network.
+
+This can happen even though the Bastion successfully creates the VM through Prism Central. These are different traffic paths:
+
+Bastion → Prism Central:9440           Works
+Prism Central → AHV creates VM         Works
+
+First control-plane VM → Bastion registry
+or
+Replica Sync → target registry         Fails
+
+A standard infrastructure check often proves the first two paths but not the reverse connection from the newly created VM to the Bastion.
+
+Most likely causes, in priority order
+
+1. NKP advertises the wrong Bastion address
+
+The temporary registry endpoint may contain:
+
+127.0.0.1
+172.17.x.x
+172.18.x.x
+an old Bastion address
+an address from the wrong NIC
+an unresolvable Bastion hostname
+
+A controller VM cannot reach the Bastion’s loopback address or Docker bridge address.
+
+This is especially likely when the Bastion has:
+
+Multiple NICs
+
+Multiple default routes
+
+A Docker bridge
+
+A management NIC and deployment NIC
+
+A changed IP after migration
+
+An incorrect hostname entry in /etc/hosts
+
+2. The temporary registry is listening only on localhost
+
+For example:
+
+127.0.0.1:5000
+
+instead of:
+
+0.0.0.0:5000
+
+or:
+
+<BASTION-IP>:5000
+
+The registry works from the Bastion itself but is unreachable from the control-plane VM.
+
+3. Reverse traffic from the first VM to the Bastion is blocked
+
+Possible locations include:
+
+Bastion firewalld
+
+Bastion nftables
+
+AHV Flow policy
+
+VLAN ACL
+
+Physical firewall
+
+Host-based security agent
+
+Microsegmentation policy
+
+4. The target registry on the first controller is not Ready
+
+The Replica Sync component may be waiting for the target internal registry rather than failing to reach the Bastion.
+
+The target registry may be blocked by:
+
+ImagePullBackOff
+
+Missing registry image in the supplied bundle
+
+Pending registry PVC
+
+CSI not ready
+
+Incorrect storage container
+
+CNI not ready
+
+Internal registry CA problem
+
+Target Kubernetes API not reachable through the control-plane VIP
+
+5. Containerd does not trust the temporary registry
+
+Typical error:
+
+x509: certificate signed by unknown authority
+
+This indicates that the registry CA or hosts.toml configuration was not injected correctly into the first node.
+
+6. Proxy variables intercept internal registry traffic
+
+If HTTP_PROXY or HTTPS_PROXY is present but NO_PROXY does not include the Bastion, registry, control-plane VIP and cluster networks, internal traffic can be sent toward a proxy and time out.
+
+7. NKP CLI, bundles and VM image do not match
+
+For each attempt, these must belong to the same supported release combination:
+
+NKP CLI
+Konvoy bootstrap image
+Konvoy image bundle
+Kommander bundle
+Nutanix/provider bundle
+NIB-built node image
+
+Using the correct CLI and bundles with an older or incompatible NIB image can leave containerd without the correct temporary registry configuration.
+
+The decisive checks for your next attempt
+
+Run these while the deployment still says:
+
+Waiting for infrastructure to be ready
+
+Do not wait until the temporary bootstrap cluster is deleted.
+
+1. Confirm where Replica Sync is actually running
+
+Load the kubeconfig you used to see the Replica Sync pod:
+
+export KUBECONFIG="<PATH-TO-THE-CONFIG-YOU-USED>"
+
+Run:
+
+kubectl config view --minify \
+  -o jsonpath='{.clusters[0].cluster.server}{"\n"}'
+
+kubectl get nodes -o wide
+
+kubectl get pods -A -o wide | \
+grep -Ei 'replica.*sync|sync.*replica|registry.*sync|bundle'
+
+Then set:
+
+export NS="<REPLICA-SYNC-NAMESPACE>"
+export POD="<FULL-REPLICA-SYNC-POD-NAME>"
+
+Check its placement and containers:
+
+kubectl -n "$NS" get pod "$POD" \
+  -o jsonpath='node={.spec.nodeName}{"\n"}podIP={.status.podIP}{"\n"}hostIP={.status.hostIP}{"\n"}init={.spec.initContainers[*].name}{"\n"}containers={.spec.containers[*].name}{"\n"}'
+
+Interpretation:
+
+If the node is a KinD/bootstrap node, Replica Sync is running in the temporary bootstrap cluster on the Bastion.
+
+If the node is the new AHV control-plane VM, the transfer process is running on the target.
+
+If the normal containers include docker-registry and docker-registry-syncer, you are looking at the internal registry replica pod, not the bundle-transfer pod.
+
+If the init containers resemble wait-for-registry and port-forward-registry, you are looking at the source-to-destination registry transfer process.
+
+The earlier deployment flow also confirmed that NKP creates its temporary bootstrap cluster using Docker/KinD. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+2. Extract the exact source and destination
+
+This is the most valuable command because it removes all guessing:
+
+kubectl -n "$NS" get pod "$POD" -o json | \
+jq -r '
+  .spec.initContainers[]? |
+  "INIT=\(.name)
+IMAGE=\(.image)
+COMMAND=\((.command // []) | join(" "))
+ARGS=\((.args // []) | join(" "))
+---",
+  .spec.containers[]? |
+  "CONTAINER=\(.name)
+IMAGE=\(.image)
+COMMAND=\((.command // []) | join(" "))
+ARGS=\((.args // []) | join(" "))
+---"
+'
+
+Check environment-variable names without displaying secret values:
+
+kubectl -n "$NS" get pod "$POD" -o json | \
+jq -r '
+  (.spec.initContainers[]?, .spec.containers[]?) |
+  .name as $container |
+  .env[]? |
+  [$container, .name, (.value // "<valueFrom>")] |
+  @tsv
+'
+
+Identify mounted ConfigMaps:
+
+kubectl -n "$NS" get pod "$POD" -o json | \
+jq -r '
+  .spec.volumes[]? |
+  select(.configMap != null) |
+  .configMap.name
+'
+
+Display them:
+
+for CM in $(kubectl -n "$NS" get pod "$POD" -o json | \
+  jq -r '.spec.volumes[]? | select(.configMap != null) | .configMap.name'); do
+  echo
+  echo "===== ConfigMap: $CM ====="
+  kubectl -n "$NS" get configmap "$CM" -o yaml
+done
+
+Look specifically for:
+
+source:
+target:
+registry:
+endpoint:
+server:
+host:
+port:
+
+This will reveal whether Replica Sync is trying to reach:
+
+The Bastion IP
+
+A Docker bridge address
+
+localhost
+
+The target registry service
+
+The target Kubernetes API
+
+A public registry
+
+3. Inspect both init containers
+
+Show their status:
+
+kubectl -n "$NS" get pod "$POD" -o json | \
+jq -r '
+  .status.initContainerStatuses[]? |
+  [
+    .name,
+    (.state | keys[0]),
+    (.state.waiting.reason // ""),
+    (.state.waiting.message // ""),
+    (.state.terminated.reason // "")
+  ] |
+  @tsv
+'
+
+Collect all available init-container logs:
+
+for C in $(kubectl -n "$NS" get pod "$POD" \
+  -o jsonpath='{.spec.initContainers[*].name}'); do
+  echo
+  echo "=============================="
+  echo "INIT CONTAINER: $C"
+  echo "=============================="
+  kubectl -n "$NS" logs "$POD" -c "$C" \
+    --tail=300 2>&1
+done
+
+And:
+
+kubectl -n "$NS" describe pod "$POD"
+
+The interpretation is:
+
+Status
+Meaning
+Init:0/2
+First init container has not completed
+Init:1/2
+Registry readiness passed, but port-forward or second prerequisite is not ready
+Init:ImagePullBackOff
+The sync pod’s own init image cannot be obtained
+Running main container
+Actual registry synchronization has started
+
+Check the destination registry on the first control-plane VM
+
+Using the new target cluster kubeconfig that you had extracted:
+
+export TARGET_KUBECONFIG="<TARGET-CLUSTER-KUBECONFIG>"
+
+First test the API:
+
+kubectl --kubeconfig="$TARGET_KUBECONFIG" \
+  get --raw='/readyz?verbose'
+
+Then inspect the internal registry:
+
+kubectl --kubeconfig="$TARGET_KUBECONFIG" \
+  -n registry-system get \
+  pods,pvc,svc,endpointslices -o wide
+
+Inspect the first registry replica:
+
+kubectl --kubeconfig="$TARGET_KUBECONFIG" \
+  -n registry-system describe pod \
+  cncf-distribution-registry-docker-registry-0
+
+Logs:
+
+kubectl --kubeconfig="$TARGET_KUBECONFIG" \
+  -n registry-system logs \
+  cncf-distribution-registry-docker-registry-0 \
+  --all-containers \
+  --tail=300
+
+Interpret the result:
+
+Registry namespace or pod does not exist: the registry lifecycle stage has not completed.
+
+Registry pod is Pending: inspect PVC, CSI and scheduling.
+
+Registry pod is ImagePullBackOff: the first node cannot pull from the temporary bootstrap/Bastion registry.
+
+Registry pod shows 0/2: inspect which of its two normal containers is failing.
+
+Registry pod is 2/2 Running: the destination is healthy; focus on Replica Sync source connection or port-forwarding.
+
+The public Nutanix registry implementation uses registry-system, two replicas, service port 443, and headless registry port 5000.
+
+Inspect the temporary registry on the Bastion
+
+While the deployment is running:
+
+docker ps --format \
+'table {{.Names}}\t{{.Image}}\t{{.Ports}}' | \
+grep -Ei 'registry|bundle|konvoy|sync'
+
+Also:
+
+sudo ss -lntp
+
+Look for the port shown in the Replica Sync configuration. Do not assume it is always port 5000; a temporary host port may be allocated dynamically.
+
+A good listener looks like:
+
+0.0.0.0:<PORT>
+<BASTION-IP>:<PORT>
+
+A bad listener for this workflow looks like:
+
+127.0.0.1:<PORT>
+172.17.x.x:<PORT>
+172.18.x.x:<PORT>
+
+Check all Bastion addresses and routes:
+
+hostname -f
+hostname -I
+ip -br address
+ip route
+ip route get <FIRST-CONTROL-PLANE-IP>
+getent hosts "$(hostname -f)"
+
+The ip route get output should select the Bastion address reachable from the NKP node subnet.
+
+Check the firewall:
+
+sudo firewall-cmd --state 2>/dev/null || true
+sudo firewall-cmd --list-all 2>/dev/null || true
+sudo nft list ruleset
+
+Do not open a guessed port permanently. First obtain the exact port from the Replica Sync pod or docker ps.
+
+Perform the decisive packet capture
+
+On the Bastion:
+
+sudo tcpdump -ni any \
+"host <FIRST-CONTROL-PLANE-IP> and tcp port <REGISTRY-PORT>"
+
+At the same time, from the first control-plane VM:
+
+nc -vz <BASTION-IP-OR-REGISTRY-HOSTNAME> <REGISTRY-PORT>
+
+Then test the registry API. Use the scheme shown in the Replica Sync configuration:
+
+curl -vk \
+https://<REGISTRY-HOSTNAME>:<REGISTRY-PORT>/v2/
+
+Or, when it is HTTP:
+
+curl -v \
+http://<REGISTRY-HOSTNAME>:<REGISTRY-PORT>/v2/
+
+A response such as the following proves the endpoint is reachable:
+
+HTTP 200
+HTTP 401
+{}
+
+A 401 may still indicate authentication is required, but it proves that network and TLS connectivity are working.
+
+Packet-capture interpretation
+
+What the Bastion sees
+Meaning
+No packet from the controller VM
+Wrong advertised address, DNS, route or proxy
+SYN arrives, no reply leaves
+Bastion firewall
+SYN arrives and Bastion sends RST
+Registry is not listening on that IP/port
+TCP establishes, followed by TLS alert
+CA, SNI, protocol or time problem
+HTTP response 401/403
+Authentication problem
+Connection works but image layers stall
+MTU, packet loss or security inspection
+Large retransmissions
+MTU or network quality issue
+
+Inspect containerd on the first controller
+
+Run:
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei \
+'registry|mirror|pull|resolve|x509|certificate|timeout|refused|manifest|unauthorized|no such host' | \
+tail -n 300
+
+Also:
+
+sudo journalctl -u kubelet -b --no-pager | \
+grep -Ei \
+'image|pull|registry|x509|certificate|timeout|refused|failed' | \
+tail -n 300
+
+Check the registry mirror configuration injected by NKP:
+
+sudo find /etc/containerd/certs.d \
+  -maxdepth 3 \
+  -type f \
+  -print
+
+Display the host configurations:
+
+sudo find /etc/containerd/certs.d \
+  -type f \
+  -name hosts.toml \
+  -exec sh -c '
+    echo
+    echo "===== $1 ====="
+    sed -n "1,200p" "$1"
+  ' sh {} \;
+
+Look for:
+
+server =
+host."
+ca =
+skip_verify =
+
+If the generated hosts.toml points to the wrong Bastion IP, an old IP, localhost or a Docker bridge address, you have found the root cause.
+
+Check the proxy configuration
+
+On both Bastion and the first controller:
+
+env | grep -iE '^(http|https|no)_proxy='
+env | grep -iE '^(HTTP|HTTPS|NO)_PROXY='
+
+Also inspect service-level variables:
+
+systemctl show containerd --property=Environment
+systemctl show docker --property=Environment
+
+When a proxy is configured, NO_PROXY should include at least:
+
+127.0.0.1
+localhost
+Bastion IP
+Bastion hostname
+Prism Central IP/FQDN
+control-plane VIP
+control-plane node subnet
+Pod CIDR
+Service CIDR
+.svc
+.cluster.local
+internal registry service names
+
+Error destination mapping
+
+The exact hostname in the error will tell you which path is broken.
+
+Error contains
+Actual failing area
+Bastion IP or Bastion hostname
+Controller-to-Bastion source registry path
+127.0.0.1:5000
+Replica Sync port-forward is not available
+cncf-distribution-registry...registry-system.svc...
+Internal registry service/endpoints/TLS
+Control-plane VIP on 6443
+Replica Sync cannot reach the target Kubernetes API
+ghcr.io, docker.io, or quay.io
+Mirror configuration was not applied or image is missing from the bundle
+x509: certificate signed by unknown authority
+Registry CA missing or wrong containerd trust configuration
+connection refused
+Host reachable, but nothing listening on the advertised port
+i/o timeout
+Firewall, route, wrong IP or proxy
+no such host
+DNS resolution
+manifest unknown
+Image/tag absent from bundle or artifact version mismatch
+Registry pod PVC Pending
+CSI/storage-container problem, not Bastion connectivity
+
+The public-source caveat
+
+The open-source Nutanix registry-syncer code is specifically designed for synchronizing the management-cluster registry into workload-cluster registries, and it explicitly skips applying itself when the cluster is the management cluster.
+
+Therefore, the cluster-prefixed Replica Sync pod seen during initial management-cluster creation is most likely generated by NKP’s separate konvoybundlepusher component. The exact initial component is not publicly documented in enough detail to confirm every internal name, but the transfer architecture and failure stage are consistent with your observation.
+
+Revised conclusion
+
+Your diagnosis is substantially correct:
+
+The management-cluster creation is reaching the point where NKP must transfer air-gapped images from the Bastion/bootstrap registry into the first control-plane node’s internal registry, and that handoff is failing.
+
+However, Init:0/2 indicates that the Replica Sync pod probably has not started the actual image copy. It is most likely waiting for the destination registry or failing an initial source/destination connectivity prerequisite.
+
+Because both NKP 2.18 and NKP 2.16 fail in the same place, I would stop switching versions and focus on these two checks first:
+
+# 1. Extract the exact source and destination addresses
+kubectl -n "$NS" get pod "$POD" -o json | \
+jq -r '
+  (.spec.initContainers[]?, .spec.containers[]?) |
+  "\(.name)
+image=\(.image)
+command=\((.command // []) | join(" "))
+args=\((.args // []) | join(" "))
+---"
+'
+
+# 2. Capture reverse connectivity on the Bastion
+sudo tcpdump -ni any \
+"host <FIRST-CONTROL-PLANE-IP> and tcp port <EXACT-REGISTRY-PORT>"
+
+The most likely finding is either:
+
+The registry endpoint is bound only to localhost/Docker bridge
+
+or:
+
+The first controller VM cannot establish reverse TCP connectivity
+to the temporary registry exposed by the Bastion
+
+The earlier MEWA deployment export used here was updated on September 4, 2026 and exported on September 5, 2026. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+## Prompt:
+9/6/2026, 12:53:52 AM
+
+bastion prisem central and the nkp managment cluster all are in the same subnet 
+the first vm controle plan vm is geting one ip from the ipam and it needs to assign the controle plane vip which is not assigned when i check the vm
+
+i got the below from my frient to check 
+On bootstrap cluster:
+
+kubectl logs -n capx-system \
+  -l cluster.x-k8s.io/provider=infrastructure-nutanix --tail=200 -f
+
+kubectl logs -n capi-kubeadm-control-plane-system \
+  deployment/capi-kubeadm-control-plane-controller-manager --tail=200 -f
+
+kubectl logs -n capi-kubeadm-bootstrap-system \
+  deployment/capi-kubeadm-bootstrap-controller-manager --tail=200 -f
+
+kubectl logs -n capi-system \
+  deployment/capi-controller-manager --tail=200 -f CAPX logs cover VM/Prism Central creation; KCP and kubeadm-bootstrap logs cover control-plane reconciliation and node initialization On control plane you can check logs:
+
+sudo journalctl -u kubelet -b --no-pager
+sudo journalctl -u containerd -b --no-pager
+sudo journalctl -u cloud-final -b --no-pager
+sudo tail -n 300 /var/log/cloud-init-output.log
+
+## Response:
+9/6/2026, 12:54:07 AM
+
+Your friend’s commands are the right starting point. I’m checking the control-plane VIP sequence to distinguish a kube-vip failure from the earlier image-transfer issue.
+
+The missing VIP appears earlier in the failure chain than Replica Sync. I’m checking whether kube-vip was never rendered, never pulled, or started and failed.
+
+Checking VIP assignment
+
+I’m evaluating the suggested logs and commands against NKP behavior. A control-plane VM receiving DHCP confirms basic networking, but the VIP usually appears only after its management component starts and successfully claims it.
+
+Checked VIP assignment
+
+Searching the web
+
+Validating troubleshooting steps
+
+I’m checking whether those commands target the correct NKP components and whether the VIP is expected on the VM interface. The DHCP address alone doesn’t confirm VIP provisioning; bootstrap reconciliation and VIP-manager logs are key.
+
+Tracing the VIP lifecycle
+
+I’m connecting bootstrap-cluster reconciliation with first-node initialization. I’ll verify whether the VIP manager manifest exists, whether its container starts, and whether cloud-init, kubelet, or container runtime errors prevent the address from being advertised.
+
+Validated troubleshooting steps and traced the VIP lifecycle
+
+Searching the web
+
+Upgrade using manifest | kube-vip
+Quick Start - The Cluster API Book
+
+Searched 6 websites
+
+Assessing the bootstrap path
+
+I’m treating the missing VIP as an early failure, not a simple subnet issue. If the VIP manager manifest isn’t created or its image cannot start, kubeadm, API readiness, and later registry synchronization can all stall.
+
+Assessed the bootstrap path
+
+Searched repositories and reviewed kube-vip control-plane VIP configuration logic
+
+Investigated NKP VIP assignment failures and searched replica-sync registry references
+
+Searching the web
+
+GitHub - kube-vip/kube-vip: Kubernetes Control Plane Virtual IP and Load-Balancer · GitHub
+
+Searched 1 website
+
+Verified NKP kube-vip configuration and researched virtual IP management
+
+Searching the web
+
+Static Pods | kube-vip
+
+Prioritizing first-node checks
+
+I’m focusing on the first control-plane VM before investigating ReplicaSync. I’ll verify VIP configuration, manifest creation, container startup, and connectivity, then correlate those findings with bootstrap reconciliation conditions.
+
+Checking network prerequisites
+
+I’m verifying the most important prerequisite: the control-plane VIP must be unused and excluded from the subnet’s DHCP or IPAM allocation range. Sharing a subnet is fine, but an overlapping VIP can prevent reliable assignment.
+
+Prioritized first-node checks and verified network prerequisites
+
+Searched 1 website
+
+Inspected kube-vip configuration, injection logs, schemas, and registry settings
+
+Worked for 5m 31s
+
+This changes the diagnosis: the control-plane VIP is now the primary checkpoint
+
+The first control-plane VM receiving a normal IP from Nutanix IPAM is expected. The control-plane VIP must not be allocated to that VM by Prism IPAM. It should be:
+
+In the same subnet as the control-plane nodes.
+
+Outside the DHCP/IPAM allocation scope.
+
+Reserved or blacklisted so IPAM cannot lease it.
+
+Added inside one control-plane VM as a secondary virtual address by kube-vip.
+
+Nutanix’s deployment guidance specifically says that the control-plane VIP must be outside the IPAM scope, while the individual node addresses come from IPAM. (GitHub)
+
+Therefore:
+
+Not seeing the VIP in the Prism VM NIC view is not conclusive.
+
+Not seeing the VIP inside the guest with ip addr is a real failure.
+
+Once bootstrap succeeds, the address normally looks similar to:
+
+eth0:
+  10.x.x.101/24       # Normal node IP from IPAM
+  10.x.x.50/32        # Control-plane VIP added by kube-vip
+
+Only one control-plane node owns the VIP at a time, although a kube-vip static pod runs on every control-plane node. Kube-vip supports kubeadm control planes using static pods and advertises the control-plane VIP using ARP or BGP. (GitHub)
+
+In your earlier successful NKP 2.16 deployment, there was a kube-vip pod running on each of the three control-plane nodes. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Expected bootstrap sequence
+
+1. CAPX creates first control-plane VM
+              ↓
+2. AHV IPAM assigns normal node IP
+              ↓
+3. cloud-init executes generated bootstrap data
+              ↓
+4. kubeadm prepares the first control plane
+              ↓
+5. kubelet reads:
+   /etc/kubernetes/manifests/kube-vip.yaml
+              ↓
+6. kube-vip adds the control-plane VIP as /32
+              ↓
+7. Kubernetes API becomes reachable on VIP:6443
+              ↓
+8. Bootstrap CAPI controllers detect ControlPlaneInitialized
+              ↓
+9. Target internal registry becomes available
+              ↓
+10. Replica Sync transfers the remaining bundle contents
+              ↓
+11. Additional control-plane and worker VMs are created
+
+The Nutanix runtime-extension documentation confirms that the configured control-plane endpoint is written into a static pod manifest at:
+
+/etc/kubernetes/manifests/kube-vip.yaml
+
+and that the manifest contains the VIP address and port 6443. (nutanix-cloud-native.github.io)
+
+This means the Replica Sync Init:0/2 state may be downstream of the missing VIP. However, there is one important circular possibility:
+
+If the first node cannot pull the kube-vip image from the temporary bundle registry, kube-vip will never start, the VIP will never be bound, and Replica Sync will continue waiting.
+
+The first-node containerd logs will distinguish that case immediately.
+
+Your friend’s commands are valid
+
+The commands cover the correct controllers:
+
+CAPX: VM creation and Prism operations.
+
+Kubeadm bootstrap controller: creation of bootstrap/cloud-init data.
+
+Kubeadm control-plane controller: control-plane initialization.
+
+Core CAPI controller: Cluster and Machine reconciliation.
+
+First-node logs: cloud-init, kubelet and containerd.
+
+I recommend adding an explicit bootstrap kubeconfig and initially collecting non-following logs. Running four -f commands in one terminal will be difficult to follow.
+
+1. Load the bootstrap kubeconfig
+
+export KUBECONFIG="/path/to/<cluster-name>-bootstrap.conf"
+export CLUSTER_NAME="<your-cluster-name>"
+export CLUSTER_NS="default"
+export VIP="<your-control-plane-vip>"
+
+Confirm you are connected to the temporary bootstrap cluster:
+
+kubectl config current-context
+kubectl cluster-info
+kubectl get nodes -o wide
+
+First check: did NKP render the correct VIP?
+
+kubectl -n "$CLUSTER_NS" get cluster "$CLUSTER_NAME" \
+  -o jsonpath='controlPlaneEndpoint={.spec.controlPlaneEndpoint.host}:{.spec.controlPlaneEndpoint.port}{"\n"}'
+
+Expected:
+
+controlPlaneEndpoint=<YOUR-VIP>:6443
+
+Then locate the KubeadmControlPlane:
+
+kubectl -n "$CLUSTER_NS" get kubeadmcontrolplanes -o wide
+
+Check whether the generated KCP configuration contains kube-vip and the correct address:
+
+kubectl -n "$CLUSTER_NS" get kubeadmcontrolplanes -o yaml | \
+grep -nE -A35 -B5 'kube-vip|address:|6443'
+
+You should see references similar to:
+
+path: /etc/kubernetes/manifests/kube-vip.yaml
+...
+- name: address
+  value: <YOUR-CONTROL-PLANE-VIP>
+- name: port
+  value: "6443"
+
+Interpretation
+
+Correct VIP in Cluster and KCP: configuration generation is good; continue to the first VM.
+
+Empty or wrong VIP: problem is in the NKP configuration file or deployment command.
+
+Correct Cluster endpoint but no kube-vip content in KCP: ClusterClass/runtime-extension reconciliation problem.
+
+Check CAPI status before reading logs
+
+kubectl get clusters,kubeadmcontrolplanes,machines -A -o wide
+
+Display Cluster conditions:
+
+kubectl -n "$CLUSTER_NS" get cluster "$CLUSTER_NAME" -o json | \
+jq -r '.status.conditions[]? |
+[.type, .status, (.reason // ""), (.message // "")] | @tsv'
+
+Display KubeadmControlPlane conditions:
+
+kubectl -n "$CLUSTER_NS" get kubeadmcontrolplanes -o json | \
+jq -r '.items[] |
+.metadata.name as $name |
+.status.conditions[]? |
+[$name, .type, .status, (.reason // ""), (.message // "")] | @tsv'
+
+Look for a state similar to:
+
+InfrastructureReady       True
+ControlPlaneInitialized   False
+ControlPlaneReady         False
+
+That would match your current observation: the VM exists, but the Kubernetes control plane has not initialized.
+
+Recent events:
+
+kubectl get events -A \
+  --sort-by=.metadata.creationTimestamp | tail -n 250
+
+Search for the important messages:
+
+kubectl get events -A \
+  --sort-by=.metadata.creationTimestamp | \
+grep -Ei 'error|failed|timeout|6443|vip|bootstrap|registry|pull|x509|unreachable'
+
+Corrected bootstrap-controller log commands
+
+CAPX
+
+The selector-based command your friend provided is valid:
+
+kubectl logs -n capx-system \
+  -l cluster.x-k8s.io/provider=infrastructure-nutanix \
+  --all-containers=true \
+  --prefix=true \
+  --tail=300
+
+A more deterministic version is:
+
+kubectl logs -n capx-system \
+  deployment/capx-controller-manager \
+  -c manager \
+  --tail=300
+
+Because the VM already exists and received an IP, CAPX will probably show successful infrastructure creation. It may not explain the VIP failure because CAPX does not assign the kube-vip address.
+
+Kubeadm control-plane controller
+
+kubectl logs -n capi-kubeadm-control-plane-system \
+  deployment/capi-kubeadm-control-plane-controller-manager \
+  -c manager \
+  --tail=300
+
+This is one of the most important logs. Look for:
+
+waiting for control plane
+failed to initialize
+failed to connect
+dial tcp <VIP>:6443
+i/o timeout
+connection refused
+no route to host
+
+Kubeadm bootstrap controller
+
+kubectl logs -n capi-kubeadm-bootstrap-system \
+  deployment/capi-kubeadm-bootstrap-controller-manager \
+  -c manager \
+  --tail=300
+
+This confirms whether the cloud-init/bootstrap secret was generated.
+
+Core CAPI controller
+
+kubectl logs -n capi-system \
+  deployment/capi-controller-manager \
+  -c manager \
+  --tail=300
+
+Follow all four during the deployment
+
+Open separate tmux panes or separate SSH sessions and add:
+
+-f
+
+Do not put all four follow commands in the same terminal.
+
+The decisive checks are on the first control-plane VM
+
+Set the expected values:
+
+export VIP="<CONTROL-PLANE-VIP>"
+export NODE_IP="<FIRST-CONTROL-PLANE-NODE-IP>"
+
+1. Confirm cloud-init completed
+
+cloud-init status --long
+
+Expected:
+
+status: done
+
+Check the services:
+
+sudo systemctl --no-pager -l status \
+  cloud-final kubelet containerd
+
+Check cloud-init errors:
+
+sudo journalctl -u cloud-final -b --no-pager | tail -n 300
+
+sudo grep -nEi \
+'error|failed|failure|kubeadm|registry|mirror|x509|timeout|refused|6443' \
+/var/log/cloud-init-output.log | tail -n 300
+
+Your friend’s full command is also correct:
+
+sudo tail -n 300 /var/log/cloud-init-output.log
+
+Interpretation
+
+If cloud-init status says error or running, the issue is before kube-vip. Do not troubleshoot Replica Sync first.
+
+2. Check whether the kube-vip manifest exists
+
+sudo ls -la /etc/kubernetes/manifests/
+
+Expected files should eventually include:
+
+etcd.yaml
+kube-apiserver.yaml
+kube-controller-manager.yaml
+kube-scheduler.yaml
+kube-vip.yaml
+
+Check kube-vip specifically:
+
+sudo test -f /etc/kubernetes/manifests/kube-vip.yaml \
+  && echo "kube-vip manifest exists" \
+  || echo "kube-vip manifest is MISSING"
+
+Display the relevant configuration:
+
+sudo grep -nE \
+'image:|name: address|name: port|name: vip_|name: interface|value:' \
+/etc/kubernetes/manifests/kube-vip.yaml
+
+Or inspect the complete manifest:
+
+sudo sed -n '1,240p' \
+  /etc/kubernetes/manifests/kube-vip.yaml
+
+Confirm that:
+
+address matches your expected control-plane VIP.
+
+Port is 6443.
+
+The referenced interface exists.
+
+The image points to the expected mirrored/bundled image location.
+
+Critical interpretation
+
+Result
+Meaning
+kube-vip.yaml missing
+cloud-init/kubeadm bootstrap did not create it
+File exists with wrong VIP
+generated NKP configuration is wrong
+File exists with correct VIP
+continue to kubelet/containerd checks
+File references an unexpected public registry
+bundle/mirror configuration was not applied correctly
+
+3. Check whether kubelet attempted to run kube-vip
+
+Since the API VIP is not available, use crictl locally rather than depending on kubectl.
+
+sudo crictl ps -a | \
+grep -E 'kube-vip|kube-apiserver|etcd|kube-controller|kube-scheduler'
+
+Get the kube-vip container ID:
+
+KVIP_ID="$(
+  sudo crictl ps -a \
+    --name kube-vip \
+    --quiet | head -n 1
+)"
+
+echo "$KVIP_ID"
+
+Read its log:
+
+if [[ -n "$KVIP_ID" ]]; then
+  sudo crictl logs "$KVIP_ID"
+else
+  echo "No kube-vip container has been created"
+fi
+
+Check whether the image exists locally:
+
+sudo crictl images | grep -i kube-vip
+
+Interpretation
+
+No manifest and no container: cloud-init/kubeadm bootstrap failure.
+
+Manifest exists but no container: kubelet static-pod processing failure.
+
+Container exists in Exited: kube-vip starts and crashes; read its log.
+
+Container cannot be created because the image is missing: temporary registry or containerd mirror issue.
+
+Container is Running but VIP absent: address/interface/leader-election or privileges issue.
+
+4. Check whether the VIP is actually attached inside the VM
+
+ip -br address
+
+Exact check:
+
+ip -o address show | grep -F "$VIP" \
+  || echo "CONTROL-PLANE VIP IS NOT BOUND"
+
+Once kube-vip succeeds, expect approximately:
+
+inet <VIP>/32 scope global <interface>
+
+The VIP is expected on one control-plane leader, not all three.
+
+5. Check whether the Kubernetes API server started locally
+
+sudo ss -lntp | grep ':6443' \
+  || echo "Nothing is listening on TCP 6443"
+
+Test locally:
+
+curl -sk \
+  "https://127.0.0.1:6443/livez?verbose" | head -n 30
+
+Test through the node’s normal IP:
+
+curl -sk \
+  "https://${NODE_IP}:6443/livez?verbose" | head -n 30
+
+Test the VIP:
+
+curl -sk \
+  "https://${VIP}:6443/livez?verbose" | head -n 30
+
+Interpretation
+
+Node IP:6443
+VIP:6443
+Meaning
+Fails
+Fails
+kube-apiserver/etcd/bootstrap failure
+Works
+Fails
+control plane is running; kube-vip is the isolated failure
+Works
+Works
+control-plane VIP is healthy; investigate Replica Sync/registry
+Fails
+Works
+unusual state; inspect kube-vip load-balancing configuration
+
+Containerd is where the bundle/registry theory is confirmed
+
+Your friend’s command is correct:
+
+sudo journalctl -u containerd -b --no-pager
+
+Use this filtered version first:
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei \
+'kube-vip|registry|mirror|pull|resolve|x509|certificate|timeout|refused|no route|manifest|not found|unauthorized' | \
+tail -n 400
+
+Also check kubelet:
+
+sudo journalctl -u kubelet -b --no-pager | \
+grep -Ei \
+'kube-vip|static pod|6443|registry|image|pull|x509|timeout|refused|failed|error' | \
+tail -n 400
+
+Errors that would confirm the original image-transfer problem
+
+failed to pull image
+failed to resolve reference
+connection refused
+i/o timeout
+no route to host
+x509: certificate signed by unknown authority
+manifest unknown
+not found
+
+Pay attention to the registry address in the error.
+
+Example interpretation
+
+failed to pull image <temporary-registry-IP>:<port>/.../kube-vip
+
+This means:
+
+NKP rendered kube-vip correctly.
+
+Kubelet tried to start it.
+
+Containerd could not retrieve its image.
+
+VIP was never created.
+
+Bootstrap controllers could not reach VIP:6443.
+
+Replica Sync remained blocked.
+
+That would connect all your observations into one root-cause chain.
+
+Check containerd’s generated mirror configuration
+
+sudo find /etc/containerd/certs.d \
+  -maxdepth 3 \
+  -type f \
+  -print
+
+Display all hosts.toml files:
+
+sudo find /etc/containerd/certs.d \
+  -type f \
+  -name hosts.toml \
+  -exec sh -c '
+    echo
+    echo "===== $1 ====="
+    sed -n "1,200p" "$1"
+  ' sh {} \;
+
+Look for an endpoint that is:
+
+A temporary registry in the bootstrap environment.
+
+A Bastion/bootstrap-reachable address.
+
+Not 127.0.0.1.
+
+Not an unreachable Docker bridge address such as 172.17.x.x.
+
+Using a CA file that actually exists.
+
+Also inspect:
+
+sudo grep -RniE \
+'registry|mirror|server|host|ca|skip_verify' \
+/etc/containerd \
+2>/dev/null
+
+Check the VIP before starting another deployment
+
+The control-plane VIP must be excluded from IPAM. Do not assign it as a normal VM address.
+
+In Prism Central, verify that the VIP is either:
+
+Outside the managed IP pool, or
+
+Explicitly reserved/blacklisted.
+
+From the Bastion, determine the interface:
+
+export VIP="<CONTROL-PLANE-VIP>"
+
+BASTION_IF="$(
+  ip route get "$VIP" |
+  awk '{
+    for (i=1; i<=NF; i++)
+      if ($i=="dev") {
+        print $(i+1)
+        exit
+      }
+  }'
+)"
+
+echo "$BASTION_IF"
+
+Perform duplicate-address detection before the deployment:
+
+sudo arping -D \
+  -I "$BASTION_IF" \
+  -c 3 "$VIP"
+
+Interpretation:
+
+No reply before deployment: likely unused.
+
+Any reply before deployment: another system already owns the address.
+
+Do not depend only on ping; a device can own the IP and block ICMP.
+
+Monitor the VIP live during deployment
+
+On the Bastion:
+
+watch -n 2 "
+echo '=== ARP ==='
+arping -c 1 -w 1 -I ${BASTION_IF} ${VIP} 2>&1 | tail -n 2
+echo
+echo '=== API 6443 ==='
+nc -zvw1 ${VIP} 6443 2>&1
+"
+
+On the first control-plane VM:
+
+watch -n 2 "
+echo '=== Addresses ==='
+ip -br address
+echo
+echo '=== Port 6443 ==='
+ss -lnt | grep ':6443' || true
+echo
+echo '=== Static containers ==='
+sudo crictl ps -a | grep -E 'kube-vip|kube-apiserver|etcd' || true
+"
+
+When bootstrap succeeds, you should see this progression:
+
+kube-apiserver / etcd containers appear
+           ↓
+kube-vip container appears
+           ↓
+VIP/32 appears on the main interface
+           ↓
+VIP:6443 starts accepting connections
+
+One advanced bootstrap check
+
+You can verify the exact cloud-init content generated for the first control-plane Machine without exposing the entire secret.
+
+Find the first control-plane Machine:
+
+CP_MACHINE="$(
+  kubectl -n "$CLUSTER_NS" get machine \
+    -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME},cluster.x-k8s.io/control-plane" \
+    -o jsonpath='{.items[0].metadata.name}'
+)"
+
+echo "$CP_MACHINE"
+
+Find its bootstrap data Secret:
+
+DATA_SECRET="$(
+  kubectl -n "$CLUSTER_NS" get machine "$CP_MACHINE" \
+    -o jsonpath='{.spec.bootstrap.dataSecretName}'
+)"
+
+echo "$DATA_SECRET"
+
+Filter the generated data for only the relevant lines:
+
+kubectl -n "$CLUSTER_NS" get secret "$DATA_SECRET" \
+  -o jsonpath='{.data.value}' |
+base64 -d |
+grep -nEi "${VIP}|kube-vip|registry|mirror|6443"
+
+Do not display or share the complete decoded bootstrap secret because it can contain credentials.
+
+This comparison is extremely useful:
+
+Bootstrap Secret
+    versus
+/etc/kubernetes/manifests/kube-vip.yaml on the first VM
+
+If kube-vip is present in the Secret but absent on the VM, cloud-init failed while applying the generated configuration.
+
+Decision table
+
+Observation
+Root-cause area
+Cluster object contains wrong VIP
+NKP config file or create command
+KCP does not contain kube-vip
+ClusterClass/runtime-extension reconciliation
+KCP contains kube-vip, but VM manifest is missing
+cloud-init or kubeadm bootstrap
+Manifest exists, kube-vip image missing
+temporary registry/containerd mirror
+Containerd shows timeout to registry
+network, registry listener, firewall or wrong advertised registry IP
+Containerd shows x509
+temporary registry CA/trust configuration
+Kube-vip container logs interface not found
+incorrect NIC/interface detection
+Kube-vip running but VIP absent
+leader election, privileges, interface or IP conflict
+VIP exists but 6443 closed
+kube-apiserver or etcd failure
+VIP and 6443 work but Replica Sync is Init:0/2
+target registry or Replica Sync itself
+VIP replies and Replica Sync starts
+normal progression
+
+Most probable explanation based on all your observations
+
+The most likely sequence is now:
+
+CAPX creates first VM successfully
+        ↓
+VM gets normal address from IPAM
+        ↓
+cloud-init begins
+        ↓
+kube-vip static pod either:
+  - cannot pull its image, or
+  - cannot start, or
+  - cannot bind the configured VIP
+        ↓
+control-plane VIP never appears
+        ↓
+bootstrap controllers cannot reach VIP:6443
+        ↓
+target cluster cannot complete initialization
+        ↓
+target internal registry does not become usable
+        ↓
+<cluster-name>-replica-sync remains Init:0/2
+        ↓
+NKP times out and cleans up
+
+So I would prioritize the following five checks, in this exact order:
+
+# Bootstrap cluster
+kubectl -n "$CLUSTER_NS" get cluster "$CLUSTER_NAME" \
+  -o jsonpath='{.spec.controlPlaneEndpoint.host}:{.spec.controlPlaneEndpoint.port}{"\n"}'
+
+# First control-plane VM
+sudo ls -l /etc/kubernetes/manifests/kube-vip.yaml
+
+sudo crictl ps -a | grep -E 'kube-vip|kube-apiserver|etcd'
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei 'kube-vip|registry|pull|x509|timeout|refused|not found' | \
+tail -n 300
+
+ip -o address show | grep -F "$VIP" \
+  || echo "VIP not bound"
+
+Do not manually add the VIP using ip addr add. That can mask the real bootstrap problem and interfere with kube-vip leader election.
+
+I cross-checked this sequence against your earlier NKP deployment export as well. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Sources:
+
+GitHub - nutanixdev/nkp-quickstart · GitHub
+
+Control Plane Endpoint | Cluster API Runtime Extensions | Nutanix
+
+## Prompt:
+9/6/2026, 1:43:40 PM
+
+My friend gave this
+
+#First load the bootstrap image in docker from air gapped bundle
+
+docker load --input "nkp-image-builder-nkp-version.tar"
+
+#export the following variables by filling up appropiate details
+
+export CLUSTER_NAME="" # NKP Management cluster name
+export NUTANIX_USER="" # Prism Central User
+export NUTANIX_PASSWORD="" # Prism Central Pwd
+export VM_IMAGE_ID="" # VM Image name
+export PE_CLUSTER="" # PE cluster name
+export PC_ENDPOINT="" # Prism Central URL for ex. https://10.38.89.49:9440
+export CONTROL_PLANE_VIP="" #Control Plane VIP. should be static
+export LOAD_BALANCER_IP_RANGE="" #Metal LB range. for ex. 10.38.89.65-10.38.89.66
+export SUBNET="" #Subnet configured in PC
+export STORAGE_CONTAINER="" #storage container 
+export SSH_KEY_FILE="/home/.ssh/id_rsa.pub" # Public key to be injected in the nodes for SSH access
+export BUNDLE_FLAGS=" --bundle ./nkp-v2.17.1/container-images/kommander-image-bundle-v2.17.1.tar,./nkp-v2.17.1/container-images/konvoy-image-bundle-v2.17.1.tar,./nkp-v2.17.1/container-images/nutanix-product-catalog-2.17.1-airgapped.tar"
+
+#this command would deploy management cluster with default specifications -> 3 CP & 4 Workers
+
+nkp create cluster nutanix 
+--cluster-name=${CLUSTER_NAME} 
+--endpoint=${PC_ENDPOINT} 
+--vm-image=${VM_IMAGE_ID} 
+--kubernetes-service-load-balancer-ip-range=${LOAD_BALANCER_IP_RANGE} 
+--control-plane-prism-element-cluster=${PE_CLUSTER} 
+--control-plane-endpoint-ip=${CONTROL_PLANE_VIP} 
+--csi-storage-container=${STORAGE_CONTAINER} 
+--control-plane-subnets=${SUBNET} 
+--worker-prism-element-cluster=${PE_CLUSTER} 
+--worker-subnets=${SUBNET} 
+--ssh-public-key-file={$SSH_KEY_FILE} 
+${BUNDLE_FLAGS} 
+--ntp-servers=10.216.2.61,10.216.2.57 
+--timeout=1h 
+--airgapped=true 
+--insecure 
+--self-managed -v 5
+
+What is deferent
+
+## Response:
+9/6/2026, 1:43:58 PM
+
+I’ll compare your friend’s command with your bundle-based deployment, flag syntax issues, and isolate differences that could affect the VIP or Replica Sync failure.
+
+One important issue is already clear: the script loads an NKP image-builder TAR, not the Konvoy bootstrap image, and no bootstrap image is passed to nkp create.
+
+Comparing the commands
+
+I’m comparing the scripts option by option. The friend’s version adds --show_expert and --category, but it also contains a likely path typo, changes the output filename, and may use unsupported or unnecessary flags.
+
+Compared the commands
+
+Checking command differences
+
+I’m identifying concrete issues: the SSH key variable is malformed, the bootstrap archive appears mismatched, and --vm-image may replace separate control-plane and worker image options. The timeout and environment variables are mostly behavioral changes, not root-cause fixes.
+
+Checked command differences
+
+Searching the web
+
+Nutanix Cloud Native · GitHub
+How to Customize NKP Node OS Images for Air-Gapped Environments – Nutanix.dev
+
+Comparing the commands
+
+I’m comparing the scripts option by option. The friend’s version adds --timeout=1h and --ntp-servers, but it also contains a definite SSH-key expansion error, a questionable image archive, and fewer explicit cluster settings than the earlier working command.
+
+Compared the commands
+
+Identifying key differences
+
+I’m seeing four important changes: the bootstrap image is omitted or mismatched, bundles are combined into one comma-separated value, SSH-key expansion is broken, and explicit replica/network settings are missing. The longer timeout helps duration, not configuration correctness.
+
+Identified key differences
+
+Searched 2 websites
+
+Used python tool
+
+Searching the web
+
+How to Deploy a Kubernetes Cluster in the Nutanix Kubernetes Platform Using Terraform – Nutanix.dev
+
+nkp create cluster nutanix · GitHub
+Deploying NKP in Air-Gapped Environments | A Guide to Pre-Provisioned Cluster Installation – Nutanix.dev
+Free NCP-CN Practice Test Questions and Answers (2026) | Cert Empire
+Nutanix NCP-CN today updated questions - Verified by Nutanix Experts
+Nutanix - NKP : Installation rapide - Partie 2 - Création du cluster - Nuta Fr
+ryossyislandのブログ
+Nutanix Kubernetes Platform (NKP) | Part 3: Air-Gapped Deployment | ITCS Luxembourg
+Setup Air-gapped NKP Cluster - Nutanix Cloud Native and AI Solutions
+NCP-CN Sample Questions| Free Nutanix Certified Professional - Cloud Native (NCP-CN-6.10) Practice Exam | DumpsPedia
+Nutanix Enterprise AI on Cisco Compute Hyperconverged with AMD EPYC Deployment Guide - Cisco
+
+Clarifying the mismatch
+
+I’m narrowing this to the biggest risks: the script targets NKP 2.17.1, loads the wrong-looking archive, omits the bootstrap-image option, and has broken SSH-key expansion. I’d verify every filename and flag against the installed CLI before running it.
+
+Clarified the mismatch
+
+Searching the web
+
+GitHub - 192d-Wing/ntp_usg: A simple library to send ntp requests and receive responses · GitHub
+Configuring time synchronization - GitHub Enterprise Server 3.19 Docs
+create_file-server_test-fs-01.sh · GitHub
+Nutanix Enterprise AI on Cisco Compute Hyperconverged with AMD EPYC Deployment Guide - Cisco
+
+GitHub - nutanix-cloud-native/nkp-nutanix-product-catalog · GitHub
+Cisco Compute Hyperconverged with Nutanix GPT-in-a-Box 2.0 - Cisco
+
+Metanorma script that fixes Lucid / LucidChart SVG files that have <use> elements reference invalid IDs, see https://community.lucid.co/lucid-for-engineering-19/svg-export-results-in-invalid-idref-on-a-use-element-8050 · GitHub
+constants package - github.com/alimtvnetwork/gitmap-v19/gitmap/constants - Go Packages
+
+How to Customize NKP Node OS Images for Air-Gapped Environments – Nutanix.dev
+
+Pinpointing the risks
+
+I’m separating harmless differences from actual failure points. The strongest concerns are the 2.17.1 version mismatch, missing bootstrap-image argument, wrong-looking image archive, malformed SSH variable, and omitted explicit replica/network options.
+
+Comparing versions
+
+I’m distinguishing version drift from syntax: your friend’s script hardcodes 2.17.1, while your deployment uses 2.18. Mixing bundles or images can break bootstrapping. The SSH-key reference is also malformed, and the bootstrap image appears omitted.
+
+Compared versions and pinpointed risks
+
+Searched 1 website
+
+Worked for 5m 6s
+
+Main difference
+
+Your friend’s command uses the same bundle-based, no-Harbor air-gapped architecture, but it supplies the bootstrap image differently and relies on more defaults.
+
+The current Nutanix quick-start example follows this pattern:
+
+Load the Konvoy bootstrap image into Docker.
+
+Pass the Konvoy and Kommander bundle TAR files as one comma-separated --bundle value.
+
+Run nkp create cluster nutanix.
+
+That means your friend’s overall approach is valid, but the command as pasted contains two definite mistakes and several important omissions. The Nutanix quick-start script specifically resolves and loads konvoy-bootstrap-image-v<version>.tar, not the NKP image-builder TAR.
+
+Comparison
+
+Area
+Your earlier command
+Friend’s command
+Assessment
+Bootstrap image
+--bootstrap-cluster-image <konvoy-bootstrap.tar>
+Manually uses docker load, then omits bootstrap flag
+Both are ways to make the bootstrap image available
+Image loaded
+konvoy-bootstrap-image
+nkp-image-builder...tar
+Friend’s filename is wrong
+Bundles
+Separate --bundle flags
+One comma-separated bundle list
+Both forms can work
+Product catalog
+Not included
+Included as third bundle
+Optional catalog content; not needed for basic cluster bootstrap
+VM image
+Separate CP and worker image flags
+One --vm-image flag
+Equivalent when CP and workers use the same image
+Replicas
+Explicit CP and worker counts
+Relies on defaults
+Defaults are normally 3 CP and 4 workers
+Pod/service CIDRs
+Explicitly configured
+Not specified
+Defaults are used; overlap risk remains
+SSH username
+Explicit
+Not specified
+Default may work, but explicit is safer
+SSH key
+Correct "${SSH_KEY_FILE}"
+Incorrect {$SSH_KEY_FILE}
+Friend’s syntax is wrong
+SSH key path
+$HOME/.ssh/id_rsa.pub
+/home/.ssh/id_rsa.pub
+Friend’s path is probably wrong
+NTP
+Not included
+Adds --ntp-servers
+Useful only when supported by that exact CLI
+Timeout
+Default
+One hour
+Gives more troubleshooting time but does not fix the issue
+Cluster hostname
+Included in your reusable command
+Not included
+Optional without custom ingress certificates
+Air-gapped syntax
+--airgapped
+--airgapped=true
+No functional difference
+Verbosity
+--verbose 5
+-v 5
+No functional difference
+
+The public Nutanix quick-start automation also uses --vm-image, explicitly configures pod/service CIDRs, specifies replicas and SSH username, and uses a 60-minute timeout.
+
+1. The biggest mistake: wrong Docker image
+
+Your friend wrote:
+
+# First load the bootstrap image
+docker load --input "nkp-image-builder-nkp-version.tar"
+
+That comment and command contradict each other.
+
+nkp-image-builder-image
+
+This image is used when building an NKP-compatible QCOW2 machine image.
+
+Example filename:
+
+nkp-image-builder-image-v2.17.1.tar
+
+It is not the image used to run the temporary Kubernetes bootstrap cluster.
+
+konvoy-bootstrap-image
+
+This is the image used to create the temporary KinD/CAPI bootstrap cluster on the Bastion.
+
+Correct example:
+
+docker load --input \
+  "./nkp-v2.17.1/konvoy-bootstrap-image-v2.17.1.tar"
+
+A public NKP 2.17.1 air-gapped deployment example also loads konvoy-bootstrap-image-v2.17.1.tar before running the create command. (ITCS Luxembourg)
+
+Then confirm the expected image exists:
+
+docker images | grep -E 'konvoy-bootstrap|mesosphere/konvoy-bootstrap'
+
+Expected approximately:
+
+mesosphere/konvoy-bootstrap   v2.17.1
+
+The Nutanix quick-start implementation does exactly this before starting the cluster deployment.
+
+Important for your existing failure
+
+Because your first control-plane VM was successfully created, the temporary bootstrap cluster must already have started successfully. Therefore, this incorrect docker load line is a real mistake, but it probably was not the cause of that particular failed run unless the correct bootstrap image happened to remain cached in Docker from a previous attempt.
+
+2. The bundle syntax is valid, but it can be cleaner
+
+Your friend uses:
+
+export BUNDLE_FLAGS=" --bundle ./nkp-v2.17.1/container-images/kommander-image-bundle-v2.17.1.tar,./nkp-v2.17.1/container-images/konvoy-image-bundle-v2.17.1.tar,./nkp-v2.17.1/container-images/nutanix-product-catalog-2.17.1-airgapped.tar"
+
+The comma-separated bundle format is supported by Nutanix’s quick-start example:
+
+export NKP_BUNDLE="./kommander-bundle.tar,./konvoy-bundle.tar"
+
+and then:
+
+--bundle "$NKP_BUNDLE"
+
+A cleaner definition is:
+
+export NKP_BUNDLE="./nkp-v2.17.1/container-images/kommander-image-bundle-v2.17.1.tar,./nkp-v2.17.1/container-images/konvoy-image-bundle-v2.17.1.tar"
+
+Then:
+
+--bundle "${NKP_BUNDLE}"
+
+This avoids putting both the option name and its value inside one variable.
+
+Your previous successful NKP 2.16 deployment explicitly used the Konvoy bootstrap TAR plus the Konvoy and Kommander bundle TARs. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+3. The Nutanix product catalog bundle is additional content
+
+Your friend adds:
+
+nutanix-product-catalog-2.17.1-airgapped.tar
+
+The Nutanix product catalog contains definitions and artifacts for Nutanix products that can be exposed through the NKP catalog. It is separate from the core Konvoy and Kommander cluster bundles. (GitHub)
+
+For troubleshooting your management-cluster creation, start with only:
+
+konvoy-image-bundle
+kommander-image-bundle
+
+Add the product catalog only after the base cluster is successfully created, unless your exact NKP 2.17.1 installation guide explicitly requires it during initial creation.
+
+It will not correct:
+
+A missing control-plane VIP.
+
+A failed kube-vip pod.
+
+Containerd registry reachability.
+
+Replica Sync remaining Init:0/2.
+
+It can also increase the amount of data Replica Sync must transfer.
+
+4. --vm-image is a valid simplification
+
+Your earlier command used:
+
+--control-plane-vm-image "${IMAGE_NAME}"
+--worker-vm-image "${IMAGE_NAME}"
+
+Your friend uses:
+
+--vm-image="${VM_IMAGE_ID}"
+
+When both control-plane and worker nodes use the same image, --vm-image is a convenient shorthand. Nutanix’s current quick-start automation uses this form.
+
+However, rename the variable:
+
+export VM_IMAGE_NAME="nkp-rocky-..."
+
+instead of:
+
+export VM_IMAGE_ID="..."
+
+The value normally represents the Nutanix machine image name in Prism, not the Docker image-builder TAR and not necessarily an image UUID.
+
+5. The SSH key lines contain definite errors
+
+Your friend has:
+
+export SSH_KEY_FILE="/home/.ssh/id_rsa.pub"
+
+Unless a user literally has /home/.ssh, this path is wrong. Use:
+
+export SSH_KEY_FILE="${HOME}/.ssh/id_rsa.pub"
+
+For a nutanix user, that normally resolves to:
+
+/home/nutanix/.ssh/id_rsa.pub
+
+The command also has:
+
+--ssh-public-key-file={$SSH_KEY_FILE}
+
+That is incorrect Bash parameter syntax. It can result in a literal path such as:
+
+{/home/nutanix/.ssh/id_rsa.pub}
+
+Correct it to:
+
+--ssh-public-key-file="${SSH_KEY_FILE}"
+
+Verify before starting:
+
+test -r "${SSH_KEY_FILE}" \
+  && echo "SSH public key readable: ${SSH_KEY_FILE}" \
+  || echo "ERROR: SSH public key missing"
+
+Also make the node username explicit:
+
+--ssh-username="nutanix"
+
+6. Your friend relies on default node counts
+
+Their command does not include:
+
+--control-plane-replicas
+--worker-replicas
+
+The standard default management-cluster sizing is three control-plane nodes and four workers, so the comment is generally correct. (GitHub)
+
+For repeatability, I recommend making the defaults explicit:
+
+--control-plane-replicas="3" \
+--worker-replicas="4" \
+
+This also makes the generated command easier to audit.
+
+7. Your friend omits the pod and service networks
+
+Your command explicitly used:
+
+--kubernetes-pod-network-cidr "${POD_CIDR}"
+--kubernetes-service-cidr "${SERVICE_CIDR}"
+
+Your friend’s command relies on the NKP defaults.
+
+That can work, but you should explicitly configure the CIDRs after checking that they do not overlap with:
+
+The physical AHV subnet.
+
+Prism Central or Prism Element networks.
+
+VPN networks.
+
+Other Kubernetes clusters.
+
+Docker bridge networks.
+
+Any routed corporate networks.
+
+This difference will not normally explain why the control-plane VIP is missing, but an overlap can produce confusing cluster networking problems later.
+
+8. NTP is a useful addition, but verify the flag first
+
+Your friend adds:
+
+--ntp-servers=10.216.2.61,10.216.2.57
+
+This may be beneficial because the first node needs correct time for:
+
+TLS certificate validation.
+
+Kubernetes certificates.
+
+Registry certificates.
+
+Etcd and control-plane initialization.
+
+However, verify that your exact NKP CLI version supports the flag:
+
+nkp create cluster nutanix --help | \
+grep -A2 -B2 -- '--ntp-servers'
+
+If there is no output, do not include it.
+
+Also test both servers from the Bastion:
+
+nc -zvu 10.216.2.61 123
+nc -zvu 10.216.2.57 123
+
+And from the first control-plane node during deployment:
+
+chronyc sources -v
+timedatectl status
+
+NTP could help if your registry error was certificate-time related, but it will not correct routing, firewall, containerd mirror configuration or a kube-vip image-pull failure.
+
+9. The one-hour timeout does not fix the failure
+
+Your friend uses:
+
+--timeout=1h
+
+This is helpful because it preserves the bootstrap environment longer for troubleshooting. The Nutanix quick-start automation similarly uses a 60-minute timeout.
+
+But it only changes how long the CLI waits. It does not repair:
+
+Replica Sync Init:0/2
+missing control-plane VIP
+failed registry connectivity
+kube-vip image pull failure
+
+For your case, one hour is useful because you will have more time to collect:
+
+kubectl logs -n capx-system ...
+kubectl logs -n capi-kubeadm-control-plane-system ...
+sudo journalctl -u containerd ...
+sudo journalctl -u kubelet ...
+
+10. The control-plane VIP requirement is unchanged
+
+The friend’s comment says:
+
+export CONTROL_PLANE_VIP="" # should be static
+
+It should more precisely say:
+
+Static
+Unused
+Same subnet as the node VMs
+Outside the AHV IPAM allocation pool
+Reserved or blacklisted from IPAM
+
+Nutanix’s quick-start documentation specifically requires the control-plane VIP and LoadBalancer addresses to be outside the IPAM scope while remaining in the same subnet as the cluster VMs. (GitHub)
+
+The fact that Prism does not show the VIP as the VM’s primary NIC address is normal. The important check is inside the first control-plane VM:
+
+ip -o address show | grep -F "${CONTROL_PLANE_VIP}"
+
+If it is absent there, check:
+
+sudo ls -l /etc/kubernetes/manifests/kube-vip.yaml
+sudo crictl ps -a | grep kube-vip
+sudo crictl images | grep kube-vip
+sudo journalctl -u containerd -b --no-pager | grep -iE 'kube-vip|registry|x509|timeout|refused'
+
+Corrected version of your friend’s approach
+
+This keeps their preload-the-bootstrap-image method and no-Harbor bundle method:
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Set this to the exact release in use.
+# Do not mix 2.16, 2.17 and 2.18 artifacts.
+export NKP_VERSION="2.17.1"
+export NKP_DIR="/data/nkp-${NKP_VERSION}/bundles/airgapped/nkp-v${NKP_VERSION}"
+
+export BOOTSTRAP_IMAGE="${NKP_DIR}/konvoy-bootstrap-image-v${NKP_VERSION}.tar"
+
+export NKP_BUNDLE="${NKP_DIR}/container-images/kommander-image-bundle-v${NKP_VERSION}.tar,${NKP_DIR}/container-images/konvoy-image-bundle-v${NKP_VERSION}.tar"
+
+export CLUSTER_NAME="CHANGE_ME"
+export NUTANIX_USER="CHANGE_ME"
+export NUTANIX_PASSWORD="CHANGE_ME"
+export PC_ENDPOINT="https://CHANGE_ME:9440"
+
+# This is the Prism image name.
+export VM_IMAGE_NAME="CHANGE_ME_NKP_NODE_IMAGE"
+
+export PE_CLUSTER="CHANGE_ME"
+export SUBNET="CHANGE_ME"
+export STORAGE_CONTAINER="CHANGE_ME"
+
+export CONTROL_PLANE_VIP="CHANGE_ME"
+export LOAD_BALANCER_IP_RANGE="CHANGE_ME-CHANGE_ME"
+
+export POD_CIDR="CHANGE_ME"
+export SERVICE_CIDR="CHANGE_ME"
+
+export SSH_USERNAME="nutanix"
+export SSH_KEY_FILE="${HOME}/.ssh/id_rsa.pub"
+
+# Verify local artifacts
+for FILE in \
+  "${BOOTSTRAP_IMAGE}" \
+  "${NKP_DIR}/container-images/kommander-image-bundle-v${NKP_VERSION}.tar" \
+  "${NKP_DIR}/container-images/konvoy-image-bundle-v${NKP_VERSION}.tar" \
+  "${SSH_KEY_FILE}"
+do
+  if [[ ! -r "${FILE}" ]]; then
+    echo "ERROR: Missing or unreadable file: ${FILE}" >&2
+    exit 1
+  fi
+done
+
+# Load the correct bootstrap image, not nkp-image-builder-image
+docker load --input "${BOOTSTRAP_IMAGE}"
+
+# Confirm the expected bootstrap image is present
+docker images --format '{{.Repository}}:{{.Tag}}' | \
+grep -E "konvoy-bootstrap.*v${NKP_VERSION}" || {
+  echo "ERROR: Konvoy bootstrap image was not loaded correctly." >&2
+  exit 1
+}
+
+nkp create cluster nutanix \
+  --cluster-name="${CLUSTER_NAME}" \
+  --endpoint="${PC_ENDPOINT}" \
+  --vm-image="${VM_IMAGE_NAME}" \
+  --control-plane-prism-element-cluster="${PE_CLUSTER}" \
+  --control-plane-subnets="${SUBNET}" \
+  --control-plane-endpoint-ip="${CONTROL_PLANE_VIP}" \
+  --control-plane-replicas="3" \
+  --worker-prism-element-cluster="${PE_CLUSTER}" \
+  --worker-subnets="${SUBNET}" \
+  --worker-replicas="4" \
+  --csi-storage-container="${STORAGE_CONTAINER}" \
+  --kubernetes-pod-network-cidr="${POD_CIDR}" \
+  --kubernetes-service-cidr="${SERVICE_CIDR}" \
+  --kubernetes-service-load-balancer-ip-range="${LOAD_BALANCER_IP_RANGE}" \
+  --ssh-username="${SSH_USERNAME}" \
+  --ssh-public-key-file="${SSH_KEY_FILE}" \
+  --bundle="${NKP_BUNDLE}" \
+  --timeout="1h" \
+  --airgapped \
+  --insecure \
+  --self-managed \
+  --verbose=5
+
+Add NTP only after confirming support:
+
+nkp create cluster nutanix --help | grep -- '--ntp-servers'
+
+Then add:
+
+--ntp-servers="10.216.2.61,10.216.2.57" \
+
+My recommendation for your retry
+
+Use the corrected command above, but do not add the product catalog bundle during the first retry. Keep only:
+
+Kommander bundle
+Konvoy bundle
+
+Also use:
+
+--timeout=1h
+
+That creates a cleaner troubleshooting run.
+
+The key point is:
+
+Your friend’s command does not contain a special flag that will assign the control-plane VIP or repair Replica Sync. Its major useful difference is preloading the correct Konvoy bootstrap image and extending the timeout. The actual VIP assignment still depends on cloud-init, containerd, kubelet, the kube-vip manifest and successful access to the temporary/internal registry.
+
+Since your deployment already reached first-VM creation, concentrate on this chain:
+
+/etc/kubernetes/manifests/kube-vip.yaml
+        ↓
+kubelet creates kube-vip static pod
+        ↓
+containerd pulls/fetches kube-vip image
+        ↓
+kube-vip binds control-plane VIP
+        ↓
+VIP:6443 becomes reachable
+        ↓
+Replica Sync continues
+
+I compared the command with the earlier exported NKP deployment conversation, which was updated on September 4, 2026. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Sources:
+
+Nutanix Kubernetes Platform (NKP) | Part 3: Air-Gapped Deployment | ITCS Luxembourg
+
+GitHub - nutanix-cloud-native/nkp-nutanix-product-catalog · GitHub
+
+## Prompt:
+9/6/2026, 3:35:14 PM
+
+Summarize my problem in 3 lines technically to give it to support
+
+## Response:
+9/6/2026, 3:35:18 PM
+
+Summarizing deployment issue
+
+NKP 2.18 and 2.16 air-gapped deployments on Nutanix AHV create the first control-plane VM successfully, but the expected control-plane VIP is never assigned.
+The cluster remains stuck waiting for infrastructure readiness and times out after approximately 30 minutes.
+The Replica Sync pod is stuck at Init:0/2, suggesting registry/image synchronization from the bastion to the control-plane node is failing.
+
+Summarized deployment issue
+
+Worked for 50s
+
+NKP 2.18 and 2.16 bundle-based air-gapped management-cluster deployments on Nutanix AHV both fail after the first control-plane VM is created and receives an IP from IPAM.
+The control-plane VIP is never bound inside the VM, the <cluster-name>-replica-sync pod remains at Init:0/2, and installation stays at “waiting for infrastructure to be ready” until timeout and cleanup.
+Suspected failure is during first-node bootstrap/image transfer from the Bastion bootstrap registry; please investigate kube-vip startup, containerd registry mirror connectivity/CA trust, cloud-init and kubelet logs, and CAPX/CAPI/KCP reconciliation. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+## Prompt:
+9/6/2026, 3:39:36 PM
+
+The deployment failure of your NKP 2.16 or 2.18 bundle-based air-gapped management cluster on Nutanix AHV points directly to a bootstrap chicken-and-egg dilemma characteristic of Cluster API (CAPI) offline deployments. Because the -replica-sync pod is stuck at Init:0/2, and the control-plane Virtual IP (VIP) is never bound, the first control-plane VM is failing its internal cloud-init phase. The node never joins the temporary bootstrap cluster, which halts the Cluster API Provider Nutanix (CAPX), CAPI, and Kubeadm Control Plane (KCP) reconciliation loops at WaitingForKubeadmInit. Here is the targeted root-cause breakdown and exactly where the execution loop is broken:1. The replica-sync Init:0/2 & Image Pull FailureIn a bundle-based air-gapped installation, the nkp CLI spins up a local ephemeral bootstrap registry on the Bastion host (usually on port 8080 or a random high port) to pass essential core components to the newly provisioned VM via cloud-init. The Symptom: The -replica-sync pod (responsible for copying container images/charts into the local cluster's state store) remains at Init:0/2 because containerd inside the newly spawned AHV VM cannot pull the required images from your Bastion's bootstrap registry.The Root Cause:Containerd Mirror Configuration: When the VM boots up, its /etc/containerd/config.toml is written with registry mirrors pointing back to your Bastion host IP. If the Bastion host's IP/port is unreachable from the AHV guest network (e.g., due to firewall blockages, incorrect subnets, or missing static routes), the image pull fails silently or times out.Self-Signed / Untrusted CA: The bundle-based installer creates an ephemeral TLS certificate for the Bastion's registry. If cloud-init fails to inject the Bastion registry's root CA into the VM's trusted certificate store (/etc/ssl/certs/ or /etc/pki/ca-trust/), containerd will reject the image sync over an x509: certificate signed by unknown authority error. 2. Kube-vip Failure and the Missing Control-Plane VIPThe Control-Plane VIP is managed by kube-vip, which runs as a static pod (/etc/kubernetes/manifests/kube-vip.yaml).Why the VIP is missing: The static pod manifests are created by kubeadm init. Since containerd cannot pull the basic kube-apiserver, etcd, or kube-vip images from the Bastion host, kubeadm init never successfully runs.Hostname Resolution Block: If images did pull but kube-vip crashed immediately, it is often due to DNS/Hostname resolution mismatch. In kube-vip static pod configurations, if the VM cannot resolve its own local hostname via local /etc/hosts or the air-gapped DNS, kube-vip throws a no such host error and refuses to bind the VIP interface. 3. CAPI / KCP / CAPX Reconciliation BlockedBecause kubeadm init never completes inside the VM:The Kubelet remains in a crash-loop or reporting NotReady, waiting for the local API server manifests to appear.The KubeadmControlPlane (KCP) controller in the bootstrap cluster remains stuck at WaitingForKubeadmInit. It refuses to provision the remaining 2 control-plane nodes because it requires the first node to define the cluster's cryptographic authority and establish the etcd quorum.CAPX (Cluster API Provider Nutanix) shows the machine as Provisioned but the cluster infrastructure stays at Waiting for infrastructure to be ready. Step-by-Step Diagnostic and Remediation PlaybookTo pinpoint and resolve the issue, do not wait for the installation to time out. While the deployment is hung, perform the following steps:Step 1: Collect Node Logs ExternallySSH directly into the first control-plane VM using the temporary SSH key generated by the installer (or your pre-configured key):bash# Check cloud-init execution to ensure the bootstrap script finished
+cat /var/log/cloud-init-output.log
+tail -n 50 /var/log/cloud-init.log
+
+Check if containerd is throwing TLS or connection errors
+
+journalctl -u containerd -n 100 --no-pager
+
+Check if kubelet is waiting indefinitely for runtime/config
+
+journalctl -u kubelet -n 100 --no-pager
+Use code with caution.Step 2: Validate Containerd Mirror & CA TrustInside the control-plane VM, inspect the mirror settings:bashcat /etc/containerd/config.toml
+Use code with caution.Look for the [plugins."io.containerd.grpc.v1.cri".registry.mirrors] section.Identify the Bastion IP/port listed there. From the VM, run a curl check against that endpoint:bashcurl -kI https://:/v2/
+Use code with caution.If it times out, you have a network routing/firewall constraint between your AHV guest network and the Bastion host.If it responds but journalctl -u containerd shows x509 errors, verify that the Bastion CA is properly populated under /etc/containerd/certs.d/ or /etc/docker/certs.d/. Step 3: Check Kubeadm ManifestsCheck if kubeadm even attempted initialization:bashls -l /etc/kubernetes/manifests/
+Use code with caution.If this directory is empty or missing kube-vip.yaml, it proves cloud-init or kubeadm failed prior to control plane generation due to missing images.Step 4: Ensure Proper Flags on nkp create clusterWhen executing the bundle-based air-gapped installation, ensure your nkp create cluster nutanix command explicitly includes the registry flags so cloud-init populates the mirror config correctly: bash--registry-url https://:--registry-ca <path-to-bastion-ca.crt>
+Use code with caution.(If relying purely on the automatic local bundle flag, double check that the Bastion local firewall allows inbound traffic on the randomized/assigned port).To help pinpoint the precise blocker, could you tell me:What error messages appear at the very end of /var/log/cloud-init-output.log on the control-plane VM?Are the Bastion host and the AHV cluster network on the same VLAN, or is there a firewall filtering traffic between them?Does journalctl -u containerd show explicit x509 certificate errors or connection refused/timed out messages?
+
+Validate dos it add any help ?
+
+## Response:
+9/6/2026, 3:39:40 PM
+
+I’ll validate the claims against NKP/CAPI and kube-vip behavior, separating confirmed facts from speculation and highlighting anything useful for Nutanix Support.
+
+Validating the guidance
+
+I’m checking the claims against official documentation and source code. The explanation is directionally useful, but I’m separating confirmed behavior from speculation, especially around bootstrap flow, registry flags, and image-sync timing.
+
+Validated the guidance
+
+Searching the web
+
+GitHub - nutanix-cloud-native/cluster-api-runtime-extensions-nutanix · GitHub
+Registry | Cluster API Runtime Extensions | Nutanix
+
+GitHub - nutanix-cloud-native/cluster-api-runtime-extensions-nutanix · GitHub
+Cluster API Runtime Extensions | Nutanix
+
+containerd/docs/hosts.md at main · containerd/containerd · GitHub
+
+Assessing the diagnosis
+
+I’m finding it partly helpful: it correctly prioritizes bootstrap readiness and image availability, but overstates several details. The strongest evidence is the earlier successful bundle-only run; external registry flags and the proposed bootstrap sequence remain unverified.
+
+Assessed the diagnosis
+
+Refining the diagnosis
+
+I’m correcting key points: the target node joins its own cluster, not the temporary bootstrap cluster. “Waiting for kubeadm” and registry ports are hypotheses requiring logs; controllers usually keep reconciling rather than halt.
+
+Refined the diagnosis
+
+Correcting bootstrap assumptions
+
+I’m downgrading claims about kube-vip, hostname resolution, and registry flags. Bootstrap data may provide manifests before kubeadm finishes, and the earlier successful bundle-only deployment argues against adding external registry settings without evidence.
+
+Searching the web
+
+clusterctl CLI - The Cluster API Book
+Version Support - The Cluster API Book
+move - The Cluster API Book
+Glossary - The Cluster API Book
+Glossary - The Cluster API Book
+Concepts - The Cluster API Book
+Glossary - The Cluster API Book
+Glossary - The Cluster API Book
+Glossary - The Cluster API Book
+Glossary - The Cluster API Book
+
+Clarifying cluster roles
+
+I’m distinguishing bootstrap infrastructure from the target cluster: the first control-plane VM is provisioned for the target cluster, while bootstrap components manage orchestration. I’m avoiding claims about exact internal timing unless logs confirm them.
+
+Assessing usefulness
+
+I’m treating it as a useful hypothesis, not a confirmed diagnosis. It adds practical checks, but I’d correct the cluster-role explanation, avoid asserting kube-vip timing, and remove unverified registry flags. Your earlier bundle-only deployment succeeded without them (file reference).
+
+Clarified cluster roles and assessed usefulness
+
+Searched 2 websites
+
+Worked for 2m 52s
+
+Yes, it adds useful direction, but it should be treated as a working hypothesis, not a confirmed root-cause analysis. Several parts are technically accurate, while others are overstated or incorrect.
+
+What is valid and useful
+
+The strongest and most useful part is the focus on the first control-plane VM bootstrap. Cluster API generates bootstrap data for the first control-plane machine and holds the remaining control-plane machines until ControlPlaneInitialized=True. Therefore, cloud-init, kubeadm, kubelet, containerd, and kube-vip are exactly the correct areas to investigate. (release-1-3.cluster-api.sigs.k8s.io)
+
+The missing VIP is also an important observation. Nutanix’s runtime extension places the kube-vip static-pod manifest at:
+
+/etc/kubernetes/manifests/kube-vip.yaml
+
+The manifest should contain the configured VIP and port 6443. If the file exists but kube-vip does not run, the problem is likely image pulling, containerd, interface detection, or kube-vip itself. If the file does not exist, the problem is earlier in cloud-init/bootstrap-data processing. (nutanix-cloud-native.github.io)
+
+Registry connectivity and CA trust are also legitimate possibilities. Nutanix’s internal registry workflow writes registry CA material onto the nodes for containerd to trust the internal registry. Therefore, x509, connection timeout, connection refused, and missing-image errors in containerd are all relevant evidence. (nutanix-cloud-native.github.io)
+
+These commands from the proposed analysis are useful:
+
+cloud-init status --long
+sudo journalctl -u cloud-final -b --no-pager
+sudo journalctl -u containerd -b --no-pager
+sudo journalctl -u kubelet -b --no-pager
+sudo tail -n 300 /var/log/cloud-init-output.log
+sudo ls -la /etc/kubernetes/manifests/
+sudo crictl ps -a
+
+What is inaccurate or not yet proven
+
+1. The first control-plane VM does not join the bootstrap cluster
+
+This statement is incorrect:
+
+“The node never joins the temporary bootstrap cluster.”
+
+The temporary bootstrap cluster runs CAPI, CAPX, KCP, and CABPK controllers. The first AHV VM initializes a separate target management cluster using kubeadm init. It does not become a node of the temporary bootstrap cluster.
+
+A more accurate statement is:
+
+The first control-plane VM fails to initialize the target management cluster, so the temporary bootstrap cluster never observes ControlPlaneInitialized=True.
+
+2. CAPX is probably not the component stuck at WaitingForKubeadmInit
+
+CAPX creates and manages the AHV VM infrastructure. Because the VM is created, powered on, and receives an IP from IPAM, CAPX has probably completed most of its immediate work.
+
+The waiting condition is more likely in:
+
+KubeadmControlPlane
+
+KubeadmConfig
+
+CAPI Machine reconciliation
+
+The target VM’s cloud-init/kubeadm process
+
+CAPX logs are still useful, but CAPX may show the Nutanix Machine as provisioned while KCP remains uninitialized.
+
+3. replica-sync Init:0/2 does not prove that image copying has started
+
+Init:0/2 normally means the first init container has not completed. The main Replica Sync container may not have started at all.
+
+The public Nutanix registry-syncer implementation first waits for the destination registry, then establishes a port-forward, and only afterward runs the actual registry synchronization. (nutanix-cloud-native.github.io)
+
+Therefore, Replica Sync may be waiting because:
+
+The target API on the control-plane VIP is unavailable.
+
+The destination registry pod does not exist yet.
+
+The destination registry pod is not Ready.
+
+Its PVC is Pending.
+
+The destination registry has an image-pull problem.
+
+The sync pod cannot reach the target API.
+
+It is not yet proven that the Bastion has started pushing and failed midway.
+
+4. The “usually port 8080 or a random high port” claim is unsupported
+
+Do not assume port 8080, 5000, or any random port. Extract the exact source, destination, protocol, and port from the Replica Sync pod definition:
+
+kubectl get pods -A -o wide | \
+grep -Ei 'replica.*sync|registry.*sync|bundle'
+
+kubectl -n <namespace> get pod <replica-sync-pod> -o json | \
+jq -r '
+  (.spec.initContainers[]?, .spec.containers[]?) |
+  "NAME=\(.name)
+IMAGE=\(.image)
+COMMAND=\((.command // []) | join(" "))
+ARGS=\((.args // []) | join(" "))
+---"
+'
+
+Also inspect its ConfigMaps:
+
+kubectl -n <namespace> get pod <replica-sync-pod> -o json | \
+jq -r '.spec.volumes[]? |
+select(.configMap != null) |
+.configMap.name'
+
+That will tell you whether the source is actually:
+
+A Bastion IP
+
+A Docker/KinD address
+
+An internal Kubernetes service
+
+127.0.0.1
+
+A public registry
+
+The new cluster’s internal registry
+
+5. The kube-vip manifest is not simply “created by kubeadm init”
+
+For Nutanix ClusterClass-based deployments, the runtime extension injects kube-vip.yaml into the KubeadmControlPlaneTemplate as a file to be written to the node. It is therefore more accurate to say that the manifest is delivered through the CAPI bootstrap/cloud-init configuration and then processed by kubelet as a static pod. (nutanix-cloud-native.github.io)
+
+This distinction helps troubleshooting:
+
+Manifest missing
+    → bootstrap data/cloud-init problem
+
+Manifest present but no container
+    → kubelet/static-pod or image-pull problem
+
+Container running but VIP absent
+    → kube-vip configuration/interface/leader-election problem
+
+6. Hostname resolution is possible, but it is not a leading confirmed cause
+
+The claim that kube-vip commonly refuses to bind the VIP because the VM cannot resolve its own hostname is too specific without logs.
+
+More likely kube-vip causes include:
+
+kube-vip image pull failure
+
+Incorrect VIP in the manifest
+
+Incorrect interface selection
+
+VIP conflict
+
+Insufficient container permissions/capabilities
+
+kube-apiserver or etcd not starting
+
+Container runtime failure
+
+Only prioritize hostname resolution when the kube-vip or kubelet log specifically shows:
+
+no such host
+unable to resolve hostname
+
+7. The suggested manual registry flags are unsafe to add without validation
+
+The recommendation:
+
+--registry-url https://<bastion-ip>:<port> \
+--registry-ca <path-to-bastion-ca.crt>
+
+should not be applied as written.
+
+First, --registry-url normally describes a registry used by NKP, but it does not automatically mean “the ephemeral bundle registry.” Second, --registry-ca may not be a valid flag for your NKP version. Nutanix example commands use combinations such as --registry-url, --registry-mirror-url, registry credentials, and --bundle; exact TLS flag names vary and must be confirmed from the installed CLI. (GitHub)
+
+Check locally:
+
+nkp create cluster nutanix --help | \
+grep -iE -A2 -B2 \
+'registry|mirror|cacert|certificate|bundle|bootstrap'
+
+For your bundle-only deployment, do not manually introduce a Bastion registry flag unless Nutanix Support confirms that it is required.
+
+Same subnet: what it rules out and what it does not
+
+Because the Bastion, Prism Central, and NKP nodes are all in the same subnet, a missing static route is less likely.
+
+However, the same subnet does not eliminate:
+
+Bastion firewall rules
+
+A registry bound only to 127.0.0.1
+
+A registry bound only to a Docker bridge address
+
+AHV Flow or microsegmentation rules
+
+Wrong registry port
+
+Containerd CA trust failure
+
+Incorrect proxy variables
+
+An image absent from the bundle
+
+kube-vip image-pull failure
+
+VIP conflict
+
+Cloud-init failure
+
+Also, the control-plane VIP will not normally appear as the VM’s primary IP in Prism. It must be checked inside the guest:
+
+ip -o address show | grep -F "<CONTROL-PLANE-VIP>"
+
+The most accurate diagnostic sequence
+
+On the first control-plane VM:
+
+cloud-init status --long
+
+sudo ls -la /etc/kubernetes/manifests/
+
+sudo sed -n '1,220p' \
+  /etc/kubernetes/manifests/kube-vip.yaml
+
+sudo crictl ps -a | \
+grep -E 'kube-vip|kube-apiserver|etcd|kube-controller|kube-scheduler'
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei \
+'kube-vip|registry|mirror|pull|resolve|x509|certificate|timeout|refused|no route|not found|manifest|unauthorized' | \
+tail -n 400
+
+sudo journalctl -u kubelet -b --no-pager | \
+grep -Ei \
+'kube-vip|static pod|6443|registry|pull|x509|timeout|failed|error' | \
+tail -n 400
+
+sudo ss -lntp | grep ':6443'
+
+curl -sk https://127.0.0.1:6443/livez?verbose
+
+Use this interpretation:
+
+Result
+Likely problem
+kube-vip.yaml missing
+Cloud-init/bootstrap data did not complete
+Manifest exists, but kube-vip image cannot pull
+Registry/mirror/CA/connectivity problem
+Apiserver and etcd are absent
+kubeadm initialization failed before the VIP issue
+Apiserver works on node IP, but VIP absent
+Kube-vip-specific problem
+VIP and API work, Replica Sync still Init:0/2
+Destination registry or Replica Sync prerequisite
+Containerd shows x509
+Registry CA trust
+Containerd shows timeout/refused
+Wrong endpoint, listener, firewall, or port
+Containerd shows manifest unknown
+Bundle/version/image mismatch
+
+Corrected technical conclusion
+
+A more defensible conclusion for Support would be:
+
+The first AHV control-plane VM is provisioned and receives its IP from Nutanix IPAM, but the target Kubernetes control plane does not reach ControlPlaneInitialized. The configured control-plane VIP is not bound inside the guest, and the cluster-prefixed Replica Sync pod remains at Init:0/2. The leading investigation areas are cloud-init/kubeadm completion, presence and startup of /etc/kubernetes/manifests/kube-vip.yaml, containerd access to the bundle/internal registry, registry CA trust, and target API/registry readiness; the available evidence does not yet prove whether the missing VIP is the root cause or a downstream consequence of an image-pull/bootstrap failure.
+
+So, the supplied write-up does help by identifying the correct troubleshooting layer, but remove the claims about the node joining the bootstrap cluster, assumed registry ports, confirmed Bastion mirror configuration, hostname resolution, and unverified registry flags.
+
+I also cross-checked this against the exported NKP project history updated on September 4, 2026. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Sources:
+
+Kubeadm based bootstrap - The Cluster API Book
+
+Control Plane Endpoint | Cluster API Runtime Extensions | Nutanix
+
+nkp-quickstart/nkp-create-mgmt-cluster.sh at main · nutanixdev/nkp-quickstart · GitHub
+
+## Prompt:
+9/6/2026, 9:36:17 PM
+
+i have not added any CA trust not even self signed do i need to add ?
+
+## Response:
+9/6/2026, 9:36:33 PM
+
+I’m separating the three trust paths—Prism Central, the temporary/internal bundle registry, and NKP ingress—because only some require customer-supplied CA material.
+
+Checking certificate requirements
+
+I’m assessing whether missing CA trust could explain the replica-sync initialization and VIP symptoms. I’m separating management-plane trust from internal service certificates, since adding a CA isn’t automatically required unless TLS validation is involved.
+
+Checked certificate requirements
+
+Searching the web
+
+Clarifying CA trust
+
+I’m checking whether the bundle deployment’s internal registry and replica-sync initialization require trusted certificates. The key distinction is whether NKP is using generated internal CA material or an external registry with a private CA.
+
+Searching the web
+
+Registry | Cluster API Runtime Extensions | Nutanix
+GitHub - nutanix-cloud-native/cluster-api-runtime-extensions-nutanix · GitHub
+
+Inspecting certificate paths
+
+I’m narrowing the diagnosis to the replica-sync pod and node container runtime. I’m checking for certificate errors, registry reachability, hostname mismatch, or missing images, because “no CA added” alone doesn’t prove the cause.
+
+Inspected certificate paths
+
+Searching the web
+
+How to Deploy a Kubernetes Cluster in the Nutanix Kubernetes Platform Using Terraform – Nutanix.dev
+
+Assessing CA needs
+
+I’m distinguishing manual trust from NKP’s internally generated trust. I’m not treating the lack of a user-added CA as inherently wrong; the stronger clue would be explicit certificate or registry errors from the stalled initialization.
+
+Checking trust prerequisites
+
+I’m treating manual CA enrollment as optional unless an external private registry or custom TLS endpoint is involved. NKP should handle its internal certificate trust; I’m verifying that mechanism before recommending changes.
+
+Assessed CA needs
+
+Searched 1 website
+
+Worked for 2m 45s
+
+No-not manually for your current bundle-based, no-Harbor deployment. However, registry TLS trust is still required; NKP is expected to create and distribute that trust automatically.
+
+For NKP’s internal OCI registry, the platform generates a self-signed root CA, creates registry-addon-root-ca, copies it into a cluster-specific CA Secret, writes the CA onto the nodes, and configures containerd to trust the registry. You should not normally have to create your own registry CA or add it manually. (Nutanix Cloud Native)
+
+When you need to provide a CA manually
+
+Connection
+Manual CA needed?
+Your situation
+NKP internal registry created from the bundle
+Normally No
+NKP should generate and inject it
+External Harbor/private registry with self-signed certificate
+Yes
+Not applicable because you are not using Harbor
+Prism Central with self-signed certificate
+Optional
+You are using --insecure, so validation is bypassed
+Custom NKP dashboard/Ingress certificate
+Optional and separate
+Not required to make the first control plane initialize
+
+For an external private registry or Harbor using a private/self-signed CA, the actual CA that signed that registry certificate must be supplied to the nodes. Nutanix supports adding that CA to the containerd mirror configuration. (Nutanix Cloud Native)
+
+For Prism Central, you either use a trusted CA bundle or configure the endpoint as insecure. Because your command uses:
+
+--insecure
+
+you do not need to add the Prism Central CA for this test deployment. For production, using the actual Prism Central Root CA and disabling insecure verification is preferable. (Nutanix Cloud Native)
+
+Important: do not create an arbitrary self-signed CA
+
+Creating a new self-signed certificate now will not fix the issue. The trusted CA must be the exact CA that signed the temporary/internal registry’s server certificate.
+
+For example, this would not help:
+
+Temporary registry certificate signed by CA-A
+You create and install CA-B
+
+Containerd will still reject the registry because CA-B did not sign its certificate.
+
+Determine whether CA trust is actually the blocker
+
+On the first control-plane VM, run:
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei \
+'x509|certificate|registry|mirror|pull|resolve|timeout|refused|no route|manifest|not found' | \
+tail -n 300
+
+Interpret the error:
+
+Containerd error
+Meaning
+x509: certificate signed by unknown authority
+Automatic NKP registry CA injection/trust failed
+certificate is valid for X, not Y
+Certificate SAN/hostname mismatch; adding the CA will not fix it
+connection refused
+Registry endpoint is reachable, but nothing is listening
+i/o timeout
+Network, firewall, incorrect registry address or port
+no route to host
+Network path problem
+manifest unknown or not found
+Required image absent from the bundle or version mismatch
+unauthorized
+Authentication issue
+No registry error
+The problem may be cloud-init, kubeadm or kube-vip rather than CA trust
+
+Check whether NKP generated the containerd trust configuration
+
+On the first control-plane VM:
+
+sudo find /etc/containerd/certs.d \
+  -maxdepth 3 \
+  -type f \
+  -print
+
+Display all containerd registry configurations:
+
+sudo find /etc/containerd/certs.d \
+  -type f \
+  -name hosts.toml \
+  -exec sh -c '
+    echo
+    echo "===== $1 ====="
+    sed -n "1,200p" "$1"
+  ' sh {} \;
+
+Look for entries similar to:
+
+server = "https://<registry-address>"
+
+[host."https://<registry-address>"]
+  capabilities = ["pull", "resolve"]
+  ca = "/path/to/generated/ca.crt"
+
+Then confirm the referenced CA file exists:
+
+sudo find /etc/containerd/certs.d \
+  -type f \( -name '*.crt' -o -name '*.pem' \) \
+  -print
+
+If hosts.toml references a CA file that does not exist, the automatic bootstrap configuration failed.
+
+Also inspect the broader containerd configuration:
+
+sudo grep -RniE \
+'registry|mirror|server|host|ca|skip_verify' \
+/etc/containerd \
+2>/dev/null
+
+Check the generated CA on the bootstrap cluster
+
+Using the bootstrap kubeconfig while deployment is still running:
+
+export KUBECONFIG="<cluster-name>-bootstrap.conf"
+
+kubectl get secret -A | \
+grep -E 'registry-addon-root-ca|registry-addon.*-ca'
+
+You may see names similar to:
+
+registry-addon-root-ca
+<cluster-name>-registry-addon-ca
+
+Inspect the keys without displaying the private data:
+
+kubectl -n <namespace> get secret \
+  <cluster-name>-registry-addon-ca \
+  -o json | jq -r '.data | keys[]'
+
+When the key is ca.crt, validate the certificate:
+
+kubectl -n <namespace> get secret \
+  <cluster-name>-registry-addon-ca \
+  -o jsonpath='{.data.ca\.crt}' | \
+base64 -d | \
+openssl x509 -noout -subject -issuer -dates
+
+Expected output should show a valid registry CA certificate. If the Secret exists in the bootstrap cluster but the corresponding CA/configuration does not appear on the first control-plane VM, the failure is in cloud-init/bootstrap-data application.
+
+Check kube-vip separately
+
+The missing VIP might be caused by a kube-vip image-pull failure. Check:
+
+sudo test -f /etc/kubernetes/manifests/kube-vip.yaml \
+  && echo "kube-vip manifest exists" \
+  || echo "kube-vip manifest is missing"
+
+sudo grep -n 'image:' \
+  /etc/kubernetes/manifests/kube-vip.yaml 2>/dev/null
+
+sudo crictl ps -a | grep kube-vip
+
+sudo journalctl -u kubelet -b --no-pager | \
+grep -Ei \
+'kube-vip|image|pull|x509|certificate|timeout|refused|failed' | \
+tail -n 300
+
+The result will separate these cases:
+
+Kube-vip image pull reports x509: automatic registry CA trust failed.
+
+Kube-vip image pull reports timeout/refused: registry reachability problem, not CA.
+
+Kube-vip manifest is missing: cloud-init/bootstrap did not complete.
+
+Kube-vip is running but VIP is absent: interface, VIP conflict or kube-vip configuration issue.
+
+Your earlier successful NKP 2.16 bundle deployment reached 2/2 Running for both internal registry replicas, demonstrating that the no-Harbor bundle architecture can establish its internal registry without manually supplying an external registry CA. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Conclusion
+
+Do not add a new CA preemptively. First check the exact containerd error:
+
+When it says x509: certificate signed by unknown authority, investigate why NKP’s automatically generated registry CA was not injected or referenced.
+
+When it says timeout, refused, or no route, focus on the temporary registry endpoint, listening port, firewall and connectivity.
+
+When no registry error appears, focus on cloud-init, kubeadm and kube-vip initialization.
+
+Sources:
+
+Registry | Cluster API Runtime Extensions | Nutanix
+
+## Prompt:
+9/6/2026, 9:44:11 PM
+
+the bastion is created by venila ubuntu image and the vm creation for cuntroler and worker are using nutanix ubuntu image downloaded from nutanix portal is there a problem ?
+
+## Response:
+9/6/2026, 9:44:14 PM
+
+I’m checking the exact NKP image requirements to distinguish a normal Bastion OS choice from a potentially incompatible control-plane or worker node image.
+
+Assessing image compatibility
+
+I’m checking whether mixing a vanilla Ubuntu bastion with Nutanix-provided Ubuntu images for Kubernetes control-plane and worker VMs creates an issue. The key distinction is whether those node images are officially compatible with the deployed platform version, rather than whether the bastion uses the same image.
+
+Assessed image compatibility
+
+Searching the web
+
+GitHub - nutanixdev/nkp-quickstart · GitHub
+Custom image | Cluster API Runtime Extensions | Nutanix
+
+How to Customize NKP Node OS Images for Air-Gapped Environments – Nutanix.dev
+
+Validating mixed images
+
+I’m distinguishing the bastion’s operating system from the Kubernetes node images. Using vanilla Ubuntu for the bastion is generally fine; the important check is that controller and worker images are the exact Nutanix-supported versions matching the deployed NKP release and Kubernetes version.
+
+Checking image requirements
+
+I’m treating the bastion and cluster nodes separately: their operating-system images do not need to match. The setup should work if the controller and worker images are Nutanix-supported NKP images matching the NKP and Kubernetes versions.
+
+Validated mixed images and checked image requirements
+
+Matching release images
+
+I’m narrowing the check to the image version. Using vanilla Ubuntu for the bastion is fine, but each NKP deployment should use the Nutanix node image built for that exact NKP release and Kubernetes version; reusing an image between releases may cause failures.
+
+Matched release images
+
+Searched 2 websites
+
+Worked for 2m 42s
+
+No - that OS combination is valid
+
+The Bastion does not need to use the same operating system as the NKP nodes. A vanilla Ubuntu Bastion is acceptable as long as it can run the NKP CLI, Docker, kubectl, and the temporary KinD/bootstrap cluster. Nutanix guidance explicitly identifies Ubuntu or Rocky Linux as suitable Bastion-host choices. (Nutanix)
+
+Using the Nutanix-provided Ubuntu QCOW2 image from the Nutanix Portal for the control-plane and worker VMs is also correct. Those images are prepared for NKP with the required Kubernetes, containerd, cloud-init, networking, and hardening configuration; NKP 2.17 and 2.18 specifically include validated Ubuntu image options. (Nutanix)
+
+The correct separation is:
+
+Component
+Correct image
+Bastion VM
+Vanilla Ubuntu is acceptable
+Temporary bootstrap cluster on Bastion
+konvoy-bootstrap-image-v<same-NKP-version>.tar
+Control-plane and worker VMs
+Nutanix Portal nkp-ubuntu-...qcow2 image
+nkp-image-builder-image
+Only for building or customizing an NKP node image
+
+The important risk is version mismatch, not Ubuntu versus Ubuntu
+
+Check the exact Nutanix node-image filename. It normally contains the Ubuntu version and Kubernetes version, for example:
+
+nkp-ubuntu-24.04-release-cis-1.35.x-<timestamp>.qcow2
+
+The image must be supported for the NKP release and Kubernetes version you are deploying. Nutanix-provided examples use version-specific NKP node images and advise retaining the exact portal image name. (GitHub)
+
+Therefore:
+
+NKP 2.18 with its corresponding supported Ubuntu image: correct.
+
+NKP 2.16 with its corresponding supported Ubuntu image: correct.
+
+Reusing an NKP 2.18/Kubernetes 1.35 Ubuntu image for an NKP 2.16 deployment: potentially incompatible.
+
+Using an ordinary Ubuntu cloud image for control-plane and worker nodes: incorrect, unless it was converted into an NKP-compatible image using Nutanix Image Builder. (Nutanix)
+
+Confirm these three versions
+
+On the Bastion:
+
+echo "=== NKP VERSION ==="
+nkp version
+
+echo
+echo "=== NODE IMAGE ==="
+echo "${IMAGE_NAME}"
+
+echo
+echo "=== BOOTSTRAP IMAGE ==="
+docker images --format '{{.Repository}}:{{.Tag}}' | \
+grep -i konvoy-bootstrap
+
+For an NKP 2.18 deployment, you should not accidentally have:
+
+NKP CLI:          2.18
+Bootstrap image:  2.16
+Bundle:           2.18
+Node image:       built for another NKP/Kubernetes release
+
+Everything used in one attempt should be from the same supported release set:
+
+NKP CLI
+Konvoy bootstrap image
+Konvoy bundle
+Kommander bundle
+Nutanix Ubuntu node image
+Kubernetes version
+
+One Bastion-side concern specific to vanilla Ubuntu
+
+Although vanilla Ubuntu itself is not a problem, its firewall can block the temporary registry or bundle-transfer connection from the first control-plane VM.
+
+During the next deployment, check:
+
+sudo ufw status verbose
+
+Also check the temporary registry or bundle-related listener:
+
+docker ps --format \
+'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
+
+sudo ss -lntp
+
+If ufw is active, it may allow outbound communication from the Bastion to Prism Central but still block inbound communication from the first control-plane VM to the Bastion’s temporary registry port.
+
+Do not disable the firewall permanently without checking. For a controlled diagnostic test:
+
+sudo ufw status numbered
+
+Then identify the exact temporary registry port from:
+
+docker ps --format \
+'{{.Names}} {{.Image}} {{.Ports}}' | \
+grep -Ei 'registry|bundle|konvoy'
+
+The first control-plane VM should then be able to connect to:
+
+<BASTION_IP>:<TEMPORARY_REGISTRY_PORT>
+
+Verify the Nutanix Ubuntu image from the first VM
+
+SSH into the first control-plane VM during the failed deployment and run:
+
+cat /etc/os-release
+
+sudo containerd --version
+sudo kubelet --version
+sudo crictl images
+
+Check whether the bootstrap configuration was applied:
+
+cloud-init status --long
+
+sudo ls -la /etc/kubernetes/manifests/
+
+Check for the kube-vip manifest:
+
+sudo test -f /etc/kubernetes/manifests/kube-vip.yaml \
+  && echo "kube-vip manifest exists" \
+  || echo "kube-vip manifest is missing"
+
+Check image-pull and registry errors:
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei \
+'registry|mirror|pull|resolve|kube-vip|x509|certificate|timeout|refused|not found|manifest' | \
+tail -n 300
+
+Interpret the results
+
+kube-vip.yaml is missing: cloud-init/bootstrap failed before kube-vip.
+
+Manifest exists, but kube-vip image is missing: registry or bundle-transfer problem.
+
+Containerd reports x509: internal/temporary registry CA trust problem.
+
+Containerd reports timeout/refused: Bastion listener, UFW, wrong advertised IP, or wrong port.
+
+Containerd reports manifest unknown: bundle, bootstrap, or node-image version mismatch.
+
+Kube-vip runs but the VIP is absent: kube-vip interface, VIP conflict, or runtime problem.
+
+Most likely conclusion for your case
+
+The combination:
+
+Vanilla Ubuntu Bastion
++
+Nutanix Portal Ubuntu image for control-plane/workers
+
+is not inherently a problem.
+
+The two items that need the closest validation are:
+
+Whether the Nutanix Ubuntu image exactly matches the NKP/Kubernetes release used in each attempt.
+
+Whether Ubuntu UFW or nftables on the Bastion is blocking the first control-plane VM from reaching the temporary bundle registry.
+
+Also ensure you load the correct image on the Bastion:
+
+docker load \
+  --input ./nkp-v2.18.x/konvoy-bootstrap-image-v2.18.x.tar
+
+Do not substitute this with:
+
+nkp-image-builder-image-v2.18.x.tar
+
+The latter is for building node images, not for running the temporary NKP bootstrap cluster.
+
+I also cross-checked this distinction against your earlier NKP deployment record. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Sources:
+
+How to Customize NKP Node OS Images for Air-Gapped Environments – Nutanix.dev
+
+Security, Stability, and Compliance: What’s New in NKP 2.18 | Nutanix / tech center
+
+GitHub - nutanixdev/nkp-quickstart · GitHub
+
+## Prompt:
+9/6/2026, 10:19:21 PM
+
+i did not use cloud init for bastion deployment is this a problem ? answer me shot
+
+## Response:
+9/6/2026, 10:19:24 PM
+
+Assessing Bastion setup
+
+I’m checking whether omitting cloud-init affects the Bastion. It generally isn’t required; manual provisioning is fine if networking, users, SSH access, packages, and connectivity are configured correctly. Cloud-init is more important for automated node initialization.
+
+Assessed Bastion setup
+
+Worked for 37s
+
+No. Cloud-init is not required for the Bastion VM; you can configure its IP, hostname, user, Docker, NKP CLI, and other tools manually. Cloud-init is important for the NKP-created control-plane and worker VMs, where NKP automatically generates and injects the bootstrap configuration. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+## Prompt:
+9/6/2026, 10:20:43 PM
+
+bastion vm firewall do you suspect that ?
+
+## Response:
+9/6/2026, 10:20:46 PM
+
+Assessing firewall suspicion
+
+Yes, the bastion VM firewall is a plausible suspect, especially if the first control-plane VM can reach it only during bootstrap. I’d verify listening ports, filtering rules, and connectivity from the control-plane VM; certificate errors would point elsewhere.
+
+Assessed firewall suspicion
+
+Worked for 39s
+
+Yes, the Bastion firewall is a valid suspect, specifically for inbound traffic from the first control-plane VM to the temporary bundle registry on the Bastion. The fact that the Bastion can create the VM through Prism Central only proves Bastion → Prism connectivity; it does not prove controller VM → Bastion registry connectivity. The Bastion must be reachable from the cluster network for management and registry traffic. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Check on the Bastion:
+
+sudo ufw status verbose
+sudo nft list ruleset
+sudo iptables -S
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}' | grep -Ei 'registry|bundle|konvoy'
+sudo ss -lntp
+
+Identify the temporary registry port, then from the first control-plane VM test:
+
+nc -vz <BASTION_IP> <REGISTRY_PORT>
+
+and:
+
+curl -vk https://<BASTION_IP>:<REGISTRY_PORT>/v2/
+
+If it times out, suspect firewall or binding. If it says connection refused, the registry is not listening on the Bastion IP/port. If it returns an HTTP response, the firewall path is working. Do not permanently disable the firewall; first identify the exact registry port and listener address.
+
+## Prompt:
+9/6/2026, 10:22:38 PM
+
+how to identify this nc -vz <BASTION_IP> <REGISTRY_PORT> ?
+
+## Response:
+9/6/2026, 10:22:41 PM
+
+Use the first control-plane IP to determine the Bastion source IP, then inspect Docker and Replica Sync via the bootstrap kubeconfig to identify the exact registry port.
+
+Checking registry access
+
+I’m determining whether the pod uses a control-plane VM and whether the registry endpoint is externally reachable. I’ll derive the actual port from configuration or container mappings, then test it from the first control-plane machine, noting that internal or loopback addresses require a different check.
+
+Checked registry access
+
+Searching the web
+
+GitHub - nutanix-cloud-native/nkp-ai-applications-catalog · GitHub
+
+Searching the web
+
+Testing registry connectivity
+
+I’m giving direct commands to identify the bastion’s routed IP and published registry port. I’ll distinguish host ports from container ports, then note that an unmapped or internal endpoint needs in-cluster testing instead.
+
+Tested registry connectivity
+
+Interpreting connection results
+
+I’m using the response to separate network reachability from service configuration: success confirms access, timeout suggests filtering or routing, refusal means no listener, and certificate errors point to trust configuration.
+
+Interpreted connection results
+
+Searching the web
+
+Publishing and exposing ports | Docker Docs
+
+Verifying the endpoint
+
+I’m checking the endpoint in layers: first confirm a listener exists, then test HTTP reachability, and finally interpret failures. I’m treating certificate errors separately, since they indicate connectivity but a trust problem rather than a routing failure.
+
+Identifying the listener
+
+I’m deriving the bastion IP through the route to the first control-plane node, then checking container port mappings. If nothing appears, I’m inspecting active listeners and the bootstrap workload to locate the actual endpoint.
+
+Verified the endpoint and identified the listener
+
+Searched 1 website
+
+Worked for 1m 22s
+
+Run these checks while the NKP deployment is stuck, before the bootstrap cluster is removed.
+
+1. Identify the Bastion IP
+
+From the Bastion, use the first control-plane VM IP shown in Prism:
+
+export CP_IP="<FIRST_CONTROL_PLANE_VM_IP>"
+
+ip route get "$CP_IP"
+
+Example output:
+
+10.20.30.51 dev eth0 src 10.20.30.10 uid 1000
+
+The value after src is the Bastion IP:
+
+BASTION_IP=10.20.30.10
+
+Set it automatically:
+
+export BASTION_IP=$(
+  ip route get "$CP_IP" |
+  awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}'
+)
+
+echo "$BASTION_IP"
+
+This is better than hostname -I when the Bastion has Docker interfaces or multiple NICs. Your deployment design requires the Bastion NIC to reach the cluster management network and registry path. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+2. Identify the temporary registry port
+
+On the Bastion:
+
+docker ps --format \
+'table {{.Names}}\t{{.Image}}\t{{.Ports}}' |
+grep -Ei 'registry|bundle|konvoy'
+
+Example:
+
+nkp-registry   registry:2   0.0.0.0:32771->5000/tcp
+
+In this example:
+
+export REGISTRY_PORT="32771"
+
+Use the number on the left side of ->:
+
+0.0.0.0:32771 -> 5000/tcp
+        ^^^^^
+        Bastion host port
+
+Docker maps the host port on the left to the container port on the right. (Docker Documentation)
+
+The NKP quick-start process loads the Konvoy bootstrap image into Docker and uses the local bundle files during deployment, so inspect Docker while the installation is active. (GitHub)
+
+You can also run:
+
+docker ps --format \
+'{{.ID}} {{.Names}} {{.Image}} {{.Ports}}'
+
+Then check a specific container:
+
+docker port <CONTAINER_NAME_OR_ID>
+
+3. Check whether the port is listening correctly
+
+On the Bastion:
+
+sudo ss -lntp | grep ":${REGISTRY_PORT}"
+
+Good:
+
+0.0.0.0:32771
+10.20.30.10:32771
+
+Problematic:
+
+127.0.0.1:32771
+
+If it is bound only to 127.0.0.1, the first control-plane VM cannot reach it. Docker ports bound to localhost are intended to be host-only. (Docker Documentation)
+
+4. Test from the first control-plane VM
+
+SSH to the first control-plane VM and run:
+
+nc -vz "$BASTION_IP" "$REGISTRY_PORT"
+
+Example:
+
+nc -vz 10.20.30.10 32771
+
+Interpretation:
+
+succeeded
+
+Network and firewall connectivity are working.
+
+Connection refused
+
+The Bastion is reachable, but nothing is listening on that IP and port, or the registry is bound only to localhost.
+
+Connection timed out
+
+Likely Bastion firewall, AHV Flow policy, wrong IP, or incorrect registry port.
+
+5. Test the registry API
+
+When the registry uses HTTPS:
+
+curl -vk "https://${BASTION_IP}:${REGISTRY_PORT}/v2/"
+
+When it uses HTTP:
+
+curl -v "http://${BASTION_IP}:${REGISTRY_PORT}/v2/"
+
+A response such as these proves connectivity:
+
+HTTP 200
+HTTP 401
+{}
+
+An x509 error means the network path works, but certificate trust is failing.
+
+When Docker does not show a registry port
+
+Inspect the Replica Sync pod to obtain the exact source registry endpoint:
+
+export KUBECONFIG="/path/to/<cluster-name>-bootstrap.conf"
+
+kubectl get pods -A |
+grep -Ei 'replica.*sync|registry.*sync|bundle'
+
+Set the namespace and pod name:
+
+export NS="<NAMESPACE>"
+export POD="<FULL_REPLICA_SYNC_POD_NAME>"
+
+Then inspect its arguments:
+
+kubectl -n "$NS" get pod "$POD" -o json |
+jq -r '
+  (.spec.initContainers[]?, .spec.containers[]?) |
+  "NAME=\(.name)
+IMAGE=\(.image)
+COMMAND=\((.command // []) | join(" "))
+ARGS=\((.args // []) | join(" "))
+---"
+'
+
+Also search its YAML:
+
+kubectl -n "$NS" get pod "$POD" -o yaml |
+grep -nEi 'source|target|registry|https?://|:[0-9]+'
+
+Use the exact host:port shown there. Do not assume port 5000, 8080, or any other value.
+
+Sources:
+
+Publishing and exposing ports | Docker Docs
+
+nkp-quickstart/nkpDeploy.sh at main · nutanixdev/nkp-quickstart · GitHub
+
+## Prompt:
+9/6/2026, 10:25:25 PM
+
+i told you the controle plane ip is not geting assigned it says it cant be reached ?
+
+## Prompt:
+9/6/2026, 10:26:48 PM
+
+i told you the controle plane ip is not geting assigned to the first vm one it from ipam its geting after that the controleplane ip is not geting assigned it says it cant be reached ? with port i guse 6443
+
+## Response:
+9/6/2026, 10:26:51 PM
+
+You’re right—I misunderstood the failure point. The VM gets its IPAM address, but the control-plane VIP is not bound, leaving VIP:6443 unreachable; I’ll isolate why.
+
+Searching the web
+
+Correcting initialization flow
+
+I’m aligning with the clarified architecture: Prism assigns the VM address, while kube-vip should claim the control-plane VIP inside the first control-plane VM. If that VIP is absent, initialization hasn’t completed.
+
+Corrected initialization flow
+
+Searched 4 websites
+
+Worked for 1m 7s
+
+You are correct. I misunderstood earlier.
+
+The first control-plane VM receives its node IP from AHV IPAM. The separate --control-plane-endpoint-ip is not assigned by Prism IPAM; NKP writes /etc/kubernetes/manifests/kube-vip.yaml, and kubelet starts kube-vip, which binds/advertises that VIP for the Kubernetes API on TCP 6443. Nutanix’s implementation explicitly renders the configured address and port 6443 into the kube-vip static-pod manifest. (Nutanix Cloud Native)
+
+Therefore, your actual failure is:
+
+First control-plane VM gets IPAM IP
+        ↓
+kube-vip does not bind the control-plane VIP
+        ↓
+<VIP>:6443 is unreachable
+        ↓
+KCP remains waiting for first control-plane initialization
+        ↓
+Replica Sync remains blocked
+
+In your earlier successful deployment, kube-vip eventually ran on all three control-plane nodes. ChatGPT-MEWA - NKP deployment plan-20260905-0935.txt
+
+Check these on the first control-plane VM
+
+export VIP="<CONTROL_PLANE_VIP>"
+
+ip -o addr show | grep -F "$VIP" || echo "VIP NOT ASSIGNED"
+
+sudo ls -l /etc/kubernetes/manifests/kube-vip.yaml
+
+sudo grep -nE 'image:|name: address|name: port|vip_interface|value:' \
+  /etc/kubernetes/manifests/kube-vip.yaml
+
+sudo crictl ps -a | grep -E 'kube-vip|kube-apiserver|etcd'
+
+KVIP_ID=$(sudo crictl ps -a -q --name kube-vip | head -1)
+sudo crictl logs "$KVIP_ID"
+
+Then check whether the API server itself started:
+
+sudo ss -lntp | grep ':6443'
+curl -sk https://127.0.0.1:6443/livez?verbose
+
+Interpretation
+
+kube-vip.yaml missing: cloud-init/bootstrap configuration did not complete.
+
+Manifest exists but no kube-vip container: kubelet could not start it, commonly due to image-pull failure.
+
+kube-vip container exited: its logs will show interface, VIP conflict, permission, or configuration failure.
+
+Local 127.0.0.1:6443 works but VIP:6443 fails: isolated kube-vip/interface/ARP problem.
+
+Local 127.0.0.1:6443 also fails: kubeadm, etcd, kube-apiserver, containerd, or image-pull bootstrap failure.
+
+Containerd shows x509, timeout, or connection refused: the registry/bundle delivery problem is preventing kube-vip or control-plane images from starting.
+
+Use these filtered logs:
+
+sudo journalctl -u containerd -b --no-pager | \
+grep -Ei 'kube-vip|registry|pull|x509|timeout|refused|not found|manifest' | \
+tail -n 300
+
+sudo journalctl -u kubelet -b --no-pager | \
+grep -Ei 'kube-vip|6443|static pod|image|pull|failed|error' | \
+tail -n 300
+
+The kube-vip sequence requires the static pod to start and advertise the VIP before the first control plane can finish initialization. (kube-vip)
+
+So, at this stage, do not focus first on testing a random Bastion registry port. First establish why kube-vip is not binding the configured control-plane VIP and why VIP:6443 is unreachable. The Bastion firewall becomes relevant only when the first-node containerd logs explicitly show a failed connection to a Bastion-hosted temporary registry.
+
+Sources:
+
+Control Plane Endpoint | Cluster API Runtime Extensions | Nutanix
+
+Static Pods | kube-vip
+
+
+
+Powered by ChatGPT Exporter (https://www.chatgptexporter.com)
