@@ -1,0 +1,2651 @@
+Build Harbor Offline Migration
+
+User: Anonymous
+Created: 9/11/2026 3:20:17
+Updated: 9/11/2026 3:39:41
+Exported: 9/11/2026 4:28:39
+Link: https://chatgpt.com/c/6aa33b30-728c-83eb-a11f-be7fb833da70
+
+## Prompt:
+9/11/2026, 3:20:14 AM
+
+i need to create a ubuntu based harbor using 150 gb one disk and 150 gb second disk the second disk will act as the repositry when i create i need to add ca cert and i will be deploying in a internet connected esxi hyperviser and after i build i will copy the vmdk to AHV and create the vm where there is no internet
+
+when the vm is connected to internet connected cluster i need to install all the required components and test the connection 
+when i transfer the vm i need to change the ip in the new cluster and reestablish the conection 
+when i connected to internet we can deploy in self signed when i transfer we can give ca cert
+
+if there is any unknown i missed please add it to make this harbore deployed by a profetional level
+
+give me all the commands for building testing and valadating
+
+## Response:
+9/11/2026, 3:20:30 AM
+
+I’ll build this as a production-style runbook covering architecture, Ubuntu storage preparation, Harbor installation, certificate transition, ESXi-to-AHV migration, IP changes, and end-to-end validation.
+
+The key design improvement is to keep one permanent Harbor FQDN and change only its DNS/IP mapping after migration, minimizing image retagging and trust changes.
+
+I’ll also cover air-gap readiness: preserving both disks and DNS/NTP, preloading Trivy vulnerability/Java databases online, enabling offline mode, and defining controlled database refreshes.
+
+Planning Harbor deployment
+
+I’m checking current Harbor requirements and designing a two-site setup with identical FQDNs, separate OS and data disks, and certificates that can transition from self-signed to CA-issued cleanly.
+
+Planned Harbor deployment
+
+Searching the web
+
+Uploading iPhone album into a Google Photo album
+
+Searching Harbor documentation install offline installer prerequisites HTTPS goharbor.io
+
+GPT-6 Astra + This Godot AI Plugin Change Game ... - YouTube
+"Plugin or class not found" despite existing in plugins folder
+cursor/plugins/pstack - GitHub
+Google Map directions
+Best free security plugin? : r/Wordpress - Reddit
+
+Designing the deployment
+
+I’m gathering the remaining configuration details, including Harbor storage, certificate replacement, DNS, firewalling, backups, time synchronization, and disk mounting. I’m also separating operating-system space from persistent registry data.
+
+Designed the deployment
+
+Searching the web
+
+Install Docker Engine on Ubuntu | Docker Docs
+
+Finalizing host preparation
+
+I’m shaping the procedure around AHV-compatible Ubuntu networking, persistent storage mounted at /data, Docker prerequisites, Harbor installation, certificate renewal, and migration steps that preserve the same hostname.
+
+Finalized host preparation
+
+Searching the web
+
+Harbor docs | Configure the Harbor YML File
+
+Planning static networking
+
+I’m preparing the static Netplan configuration and verifying Harbor’s offline vulnerability-scanning considerations, including database updates, migration testing, and operation without internet access.
+
+Planned static networking
+
+Searched 1 website
+
+Searching the web
+
+Verifying offline operation
+
+I’m checking the exact Harbor and scanner procedures for air-gapped deployment, especially vulnerability-database updates, so the final runbook remains practical after internet access is removed.
+
+Verified offline operation
+
+Searching the web
+
+raw.githubusercontent.com
+
+Finalizing air-gap guidance
+
+I’m assembling a practical runbook covering static networking, storage, Harbor installation, certificate replacement, scanner database handling, validation, backups, and the final internet-disconnect sequence.
+
+Finalized air-gap guidance
+
+Searching the web
+
+raw.githubusercontent.com
+
+Planning validation tests
+
+I’m preparing offline validation with a small image, Harbor project creation, push and pull checks, service-status verification, and certificate testing. I’m also confirming Docker Compose compatibility before finalizing commands.
+
+Planned validation tests
+
+Searching the web
+
+Use CA certificates with Docker | Docker Docs
+Deploy a registry server | CNCF Distribution
+
+How to manage ISOs and Image services within Nutanix Prism ...
+Email - Google
+
+Upload a VMware VMDK to Nutanix
+Qcow
+Qcow
+A Generic Checkpoint-Restart Mechanism for Virtual Machines
+
+Coordinating certificate stages
+
+I’m keeping one permanent FQDN throughout migration. I’ll use a temporary certificate for staging, then replace it with the CA-signed certificate, preserving paths, trust distribution, and Harbor configuration.
+
+Validating certificates
+
+I’m planning certificate checks for hostname coverage, validity, key matching, trust-chain verification, TLS negotiation, and Harbor health. I’m also testing authenticated registry behavior and ensuring private keys remain restricted.
+
+Coordinated and validated certificate stages
+
+Searching the web
+
+Consolidating the runbook
+
+I’m now turning the verified requirements into a single deployment and migration procedure, keeping the FQDN constant, separating Harbor data, and testing certificate trust, image push/pull, backups, and offline operation.
+
+Consolidated the runbook
+
+Searching the web
+
+Databases - Trivy
+Packet filtering and firewalls | Docker Docs
+Harbor docs | Backup And Restore Harbor With Velero
+
+Can "Shared Drives" be made available offline?
+
+AHV: Virtualization Solution for Enterprise | Nutanix
+API Documentation
+Akira ransomware is now targeting Nutanix VMs - and scoring big rewards
+
+Assembling migration guidance
+
+I’m consolidating the implementation into an executable runbook: build the AHV VM, preserve the hostname, attach and mount the data disk, install Harbor, validate offline behavior, then cut over and replace certificates.
+
+Assembled migration guidance
+
+Searching the web
+
+QEMU disk image utility — QEMU documentation
+NETPLAN-TRY - Netplan documentation
+Verify repository client with certificates | Docker Docs
+containerd/docs/hosts.md at main · containerd/containerd · GitHub
+
+Structuring the runbook
+
+I’m organizing the final procedure into prerequisites, AHV VM creation, Ubuntu configuration, storage, Harbor installation, certificate replacement, migration, validation, backups, and offline operations, while leaving site-specific values as placeholders.
+
+Writing the runbook
+
+I’m producing the complete deployment guide now, with commands for Ubuntu, storage, Docker, Harbor, certificates, AHV transfer, cutover, testing, backups, and disconnected operation, using placeholders for site-specific values.
+
+Structured and wrote the runbook
+
+Searching the web
+
+Finishing service setup
+
+I’m including service startup, Docker recovery behavior, offline scanner preparation, image validation, and maintenance checks so Harbor remains manageable after internet access is removed.
+
+Reviewing deployment checks
+
+I’m consolidating the remaining operational details: automatic startup, offline vulnerability data, image scanning, Harbor API validation, certificate trust, and recovery checks. The final guidance will distinguish required steps from optional hardening.
+
+Finished service setup and reviewed deployment checks
+
+Searching the web
+
+containerd/docs/hosts.md at main · containerd/containerd · GitHub
+Verify repository client with certificates | Docker Docs
+
+Searching 2 websites
+
+Worked for 19m 22s
+
+Professional Harbor Build and ESXi-to-AHV Migration Runbook
+
+Use the following design:
+
+Internet-connected ESXi
+┌───────────────────────────────────────────────────────────────┐
+│ Ubuntu Server 24.04 LTS                                      │
+│ 8 vCPU / 16 GB RAM                                           │
+│ Disk 1: 150 GB - OS, Docker engine and Docker image cache    │
+│ Disk 2: 150 GB - LVM/ext4 mounted on /data                   │
+│ Harbor HTTPS using temporary staging CA                      │
+│ Permanent name: harbor01.registry.example.com                │
+└───────────────────────────────────────────────────────────────┘
+                         │
+                         │ Clean shutdown and cold-copy both VMDKs
+                         ▼
+Air-gapped Nutanix AHV
+┌───────────────────────────────────────────────────────────────┐
+│ Same VM disks and permanent Harbor FQDN                      │
+│ New IP, gateway, DNS and virtual NIC name                    │
+│ Enterprise CA-signed server certificate                     │
+│ Internal DNS/NTP only                                        │
+└───────────────────────────────────────────────────────────────┘
+
+Critical design decisions
+
+Do not use the IP address as the Harbor registry name. Use the final production FQDN from the first installation, such as:
+
+harbor01.registry.example.com
+
+During staging, resolve that name to the ESXi staging IP using /etc/hosts or temporary DNS. After migration, update internal DNS to the AHV production IP. Because the certificate validates the FQDN rather than the IP, an IP change does not require changing image names.
+
+Use the offline Harbor installer even while connected to the internet. The full installer and container images will then remain available inside the dark site.
+
+The second 150 GB disk mounted at /data stores more than repository layers. It also stores Harbor’s database, registry content, secrets, job-service data, scanner data and other persistent state. Harbor explicitly preserves data_volume when containers are removed and recreated. (Harbor)
+
+Use a temporary staging CA only for the internet-connected build. After migration, replace the Harbor server certificate with one signed by the enterprise CA for the same FQDN. Harbor recommends trusted CA certificates for production and requires a SAN-compliant server certificate. (Harbor)
+
+This is a professionally hardened single-node Harbor, but it is not highly available. Failure of this VM, its data disk or the AHV container hosting it will stop the registry.
+
+As of September 11, 2026, Harbor v2.15.2 is the latest published stable release. The official offline installer SHA-256 is included below. (GitHub API) Harbor’s official recommended baseline is 4 CPU, 8 GB RAM and 160 GB disk; I recommend 8 vCPU and 16 GB RAM for this deployment, especially when multiple Kubernetes nodes pull concurrently or Trivy is enabled. (Harbor)
+
+Phase 1 - Create the ESXi VM
+
+Create the VM with:
+
+Setting
+Recommended value
+OS
+Ubuntu Server 24.04 LTS amd64
+CPU
+8 vCPU
+Memory
+16 GB
+Firmware
+UEFI; use the same mode later on AHV
+Disk 1
+150 GB, OS and Docker runtime
+Disk 2
+150 GB, Harbor /data
+NIC
+VMXNET3 on ESXi
+Filesystem
+Ubuntu LVM for OS; separate LVM/ext4 for Harbor
+Timezone
+UTC
+Secure Boot
+Follow customer policy; preserve the same boot mode on AHV
+
+Docker officially supports Ubuntu 24.04 LTS and provides Docker Engine and Compose through its Ubuntu repository. (Docker Docs)
+
+Install Ubuntu only on the first disk. Do not allow the Ubuntu installer to consume the second disk.
+
+Phase 2 - Define all deployment variables
+
+The addresses below are documentation examples and will not work in your environment. Replace every example.com, IP, gateway, DNS and NTP value before continuing.
+
+sudo -i
+
+cat >/root/harbor.env <<'EOF'
+# Harbor software
+HARBOR_VERSION="2.15.2"
+HARBOR_SHA256="67517e0ba4a3f9db90731aa560dacbc0b24a0de04d5a1b428c7d32ea96656432"
+
+# This FQDN must remain unchanged after migration
+HARBOR_FQDN="harbor01.registry.example.com"
+HARBOR_SHORT="harbor01"
+DNS_SEARCH="registry.example.com"
+
+# ESXi staging network - REPLACE
+STAGE_IP="192.0.2.25"
+STAGE_CIDR="192.0.2.25/24"
+STAGE_GATEWAY="192.0.2.1"
+STAGE_DNS1="192.0.2.10"
+STAGE_DNS2="192.0.2.11"
+
+# AHV production network - REPLACE
+PROD_IP="198.51.100.25"
+PROD_CIDR="198.51.100.25/24"
+PROD_GATEWAY="198.51.100.1"
+PROD_DNS1="198.51.100.10"
+PROD_DNS2="198.51.100.11"
+
+# Internal dark-site NTP - REPLACE
+PROD_NTP1="198.51.100.12"
+PROD_NTP2="198.51.100.13"
+
+# Confirm using lsblk before running any disk commands
+DATA_DISK="/dev/sdb"
+
+# Set true only when an offline Trivy DB update process exists
+ENABLE_TRIVY="false"
+EOF
+
+chmod 600 /root/harbor.env
+
+set -a
+source /root/harbor.env
+set +a
+
+Review the values:
+
+cat /root/harbor.env
+
+Phase 3 - Patch Ubuntu and install prerequisites
+
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get -y full-upgrade
+
+DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  ca-certificates \
+  curl \
+  gnupg \
+  jq \
+  openssl \
+  python3-yaml \
+  lvm2 \
+  parted \
+  e2fsprogs \
+  cloud-guest-utils \
+  chrony \
+  qemu-guest-agent \
+  open-vm-tools \
+  netcat-openbsd \
+  dnsutils \
+  iputils-ping \
+  traceroute \
+  tcpdump \
+  ethtool \
+  lsof \
+  rsync \
+  acl \
+  attr \
+  unzip \
+  vim
+
+hostnamectl set-hostname "$HARBOR_FQDN"
+timedatectl set-timezone Etc/UTC
+
+systemctl enable --now chrony
+systemctl enable --now open-vm-tools
+
+Include AHV VirtIO drivers in the Ubuntu initramfs before migration:
+
+for MODULE in virtio_pci virtio_blk virtio_scsi virtio_net; do
+  grep -qxF "$MODULE" /etc/initramfs-tools/modules 2>/dev/null ||
+    echo "$MODULE" >> /etc/initramfs-tools/modules
+done
+
+update-initramfs -u -k all
+
+Verify:
+
+cat /etc/os-release
+uname -r
+hostnamectl
+timedatectl
+chronyc tracking
+chronyc sources -v
+
+modinfo virtio_pci | head
+modinfo virtio_blk | head
+modinfo virtio_scsi | head
+modinfo virtio_net | head
+
+Reboot after patching:
+
+reboot
+
+Reconnect and load the variables:
+
+sudo -i
+set -a
+source /root/harbor.env
+set +a
+
+Phase 4 - Create a reusable static network configuration command
+
+The ESXi NIC might be called ens192, while the AHV NIC may become ens3, enp1s0 or another name. This helper allows the address to be changed safely from the hypervisor console.
+
+cat >/usr/local/sbin/configure-static-network <<'SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ $EUID -ne 0 || $# -ne 6 ]]; then
+  echo "Usage:"
+  echo "  configure-static-network <interface> <address/prefix> <gateway> <dns1> <dns2> <search-domain>"
+  exit 2
+fi
+
+IFACE="$1"
+ADDRESS="$2"
+GATEWAY="$3"
+DNS1="$4"
+DNS2="$5"
+SEARCH_DOMAIN="$6"
+
+ip link show dev "$IFACE" >/dev/null
+
+BACKUP="/root/netplan-backup-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$BACKUP"
+cp -a /etc/netplan/. "$BACKUP/" 2>/dev/null || true
+
+mkdir -p /etc/cloud/cloud.cfg.d
+printf 'network: {config: disabled}\n' \
+  >/etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+
+rm -f /etc/netplan/*.yaml
+
+cat >/etc/netplan/01-harbor-static.yaml <<EOF
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    ${IFACE}:
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - ${ADDRESS}
+      routes:
+        - to: default
+          via: ${GATEWAY}
+      nameservers:
+        addresses:
+          - ${DNS1}
+          - ${DNS2}
+        search:
+          - ${SEARCH_DOMAIN}
+EOF
+
+chmod 600 /etc/netplan/01-harbor-static.yaml
+netplan generate
+
+echo
+echo "Configuration generated successfully."
+echo "Run the following from the VM console:"
+echo "  netplan try --timeout 120"
+SCRIPT
+
+chmod 750 /usr/local/sbin/configure-static-network
+
+Identify the ESXi interface:
+
+ip -br link
+ip -br address
+ip route
+
+Example using ens192:
+
+configure-static-network \
+  ens192 \
+  "$STAGE_CIDR" \
+  "$STAGE_GATEWAY" \
+  "$STAGE_DNS1" \
+  "$STAGE_DNS2" \
+  "$DNS_SEARCH"
+
+netplan try --timeout 120
+
+Accept the configuration at the console when prompted.
+
+Validate:
+
+ip -br address
+ip route
+resolvectl status
+ping -c 3 "$STAGE_GATEWAY"
+dig @"$STAGE_DNS1" example.com
+
+Add a temporary staging resolution for the permanent Harbor FQDN:
+
+HOST_RE="${HARBOR_FQDN//./\\.}"
+sed -i "/${HOST_RE}/d" /etc/hosts
+
+printf '%s %s %s\n' \
+  "$STAGE_IP" \
+  "$HARBOR_FQDN" \
+  "$HARBOR_SHORT" >> /etc/hosts
+
+getent ahostsv4 "$HARBOR_FQDN"
+
+All clients used for staging tests must temporarily resolve the same FQDN to the staging IP.
+
+Phase 5 - Configure the second 150 GB disk as /data
+
+Destructive check
+
+The following section destroys everything on $DATA_DISK. Confirm that it is the second empty 150 GB disk and not the operating-system disk.
+
+lsblk -e7 -o NAME,PATH,SIZE,TYPE,FSTYPE,MOUNTPOINTS,MODEL,SERIAL
+findmnt -no SOURCE /
+pvs
+vgs
+lvs
+
+Confirm the configured disk:
+
+echo "Data disk configured as: $DATA_DISK"
+lsblk "$DATA_DISK"
+
+Create the partition, LVM volume and ext4 filesystem:
+
+if [[ "$DATA_DISK" =~ [0-9]$ ]]; then
+  DATA_PART="${DATA_DISK}p1"
+else
+  DATA_PART="${DATA_DISK}1"
+fi
+
+echo "Data partition will be: $DATA_PART"
+
+Only continue after confirming the disk.
+
+wipefs --all "$DATA_DISK"
+
+parted -s "$DATA_DISK" mklabel gpt
+parted -s -a optimal "$DATA_DISK" mkpart HARBOR_DATA 1MiB 100%
+parted -s "$DATA_DISK" set 1 lvm on
+
+partprobe "$DATA_DISK"
+udevadm settle
+
+pvcreate "$DATA_PART"
+vgcreate vg_harbor "$DATA_PART"
+lvcreate -n lv_data -l 100%FREE vg_harbor
+
+mkfs.ext4 \
+  -L HARBOR_DATA \
+  -m 1 \
+  /dev/vg_harbor/lv_data
+
+mkdir -p /data
+
+Configure UUID-based mounting. This ensures the volume still mounts when the disk changes from /dev/sdb on VMware to /dev/sda, /dev/vdb or another device on AHV.
+
+DATA_UUID="$(blkid -s UUID -o value /dev/vg_harbor/lv_data)"
+
+cp -a /etc/fstab "/etc/fstab.backup.$(date +%Y%m%d-%H%M%S)"
+sed -i '\|[[:space:]]/data[[:space:]]|d' /etc/fstab
+
+printf 'UUID=%s /data ext4 defaults,noatime 0 2\n' \
+  "$DATA_UUID" >> /etc/fstab
+
+systemctl daemon-reload
+mount -a
+
+findmnt --verify --verbose
+findmnt /data
+df -hT /data
+df -i /data
+
+touch /data/.harbor-data-volume
+chmod 644 /data/.harbor-data-volume
+
+Do not add nofail to this mount. A missing Harbor data disk should cause an obvious boot or service failure rather than starting an empty registry.
+
+Phase 6 - Install Docker Engine and Docker Compose
+
+Use Docker’s official Ubuntu repository rather than Ubuntu’s docker.io package. Docker’s official installation uses the packages docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin and docker-compose-plugin. (Docker Docs)
+
+Remove conflicting packages:
+
+for PACKAGE in \
+  docker.io \
+  docker-compose \
+  docker-compose-v2 \
+  docker-doc \
+  docker-buildx \
+  podman-docker \
+  containerd \
+  runc
+do
+  if dpkg-query -W -f='${Status}' "$PACKAGE" 2>/dev/null |
+      grep -q 'ok installed'; then
+    apt-get remove -y "$PACKAGE"
+  fi
+done
+
+Configure Docker’s repository:
+
+install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL \
+  https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+
+chmod a+r /etc/apt/keyrings/docker.asc
+
+cat >/etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+apt-get update
+
+Select and install the latest version available at build time:
+
+DOCKER_VERSION="$(apt-cache madison docker-ce | awk 'NR==1 {print $3}')"
+
+test -n "$DOCKER_VERSION" || {
+  echo "Docker version could not be identified."
+  exit 1
+}
+
+echo "Installing Docker version: $DOCKER_VERSION"
+
+apt-get install -y \
+  docker-ce="$DOCKER_VERSION" \
+  docker-ce-cli="$DOCKER_VERSION" \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-compose-plugin
+
+Configure bounded Docker logs:
+
+install -d -m 0755 /etc/docker
+
+cat >/etc/docker/daemon.json <<'EOF'
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "50m",
+    "max-file": "5"
+  },
+  "live-restore": true
+}
+EOF
+
+dockerd --validate --config-file=/etc/docker/daemon.json
+
+systemctl enable --now containerd
+systemctl enable --now docker
+systemctl restart docker
+
+Validate Docker:
+
+docker version
+docker compose version
+docker info
+docker run --rm hello-world
+
+Pin the tested versions:
+
+apt-mark hold \
+  docker-ce \
+  docker-ce-cli \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-compose-plugin
+
+Save the exact package versions and Docker DEBs for the dark site:
+
+mkdir -p /opt/installers/docker-debs
+cd /opt/installers/docker-debs
+
+for PACKAGE in \
+  docker-ce \
+  docker-ce-cli \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-compose-plugin
+do
+  VERSION="$(dpkg-query -W -f='${Version}' "$PACKAGE")"
+  echo "$PACKAGE=$VERSION"
+  apt download "$PACKAGE=$VERSION"
+done
+
+sha256sum ./*.deb > SHA256SUMS
+
+dpkg-query -W \
+  -f='${binary:Package}\t${Version}\t${Architecture}\n' \
+  > /opt/installers/ubuntu-package-manifest.txt
+
+Phase 7 - Download and verify the Harbor offline installer
+
+set -a
+source /root/harbor.env
+set +a
+
+mkdir -p /opt/installers
+cd /opt/installers
+
+curl -fL \
+  --retry 5 \
+  --retry-all-errors \
+  -o "harbor-offline-installer-v${HARBOR_VERSION}.tgz" \
+  "https://github.com/goharbor/harbor/releases/download/v${HARBOR_VERSION}/harbor-offline-installer-v${HARBOR_VERSION}.tgz"
+
+Verify the official SHA-256:
+
+echo "${HARBOR_SHA256}  harbor-offline-installer-v${HARBOR_VERSION}.tgz" |
+  sha256sum -c -
+
+The expected result is:
+
+harbor-offline-installer-v2.15.2.tgz: OK
+
+Extract:
+
+test ! -e /opt/harbor || {
+  echo "/opt/harbor already exists. Review it before continuing."
+  exit 1
+}
+
+tar -xzf \
+  "harbor-offline-installer-v${HARBOR_VERSION}.tgz" \
+  -C /opt
+
+chown -R root:root /opt/harbor
+
+ls -lh /opt/harbor
+ls -lh /opt/harbor/harbor*.tar.gz
+
+Phase 8 - Generate the temporary staging CA and server certificate
+
+Harbor must receive a server certificate and private key. Clients receive only the CA certificate. Never copy the Harbor server private key to Kubernetes nodes or Docker clients.
+
+install -d -m 0700 /root/harbor-staging-ca
+install -d -m 0755 /etc/harbor/certs
+
+cd /root/harbor-staging-ca
+umask 077
+
+Generate the temporary staging root CA:
+
+openssl genpkey \
+  -algorithm RSA \
+  -pkeyopt rsa_keygen_bits:4096 \
+  -out staging-root-ca.key
+
+openssl req \
+  -x509 \
+  -new \
+  -sha256 \
+  -days 3650 \
+  -key staging-root-ca.key \
+  -out staging-root-ca.crt \
+  -subj "/C=AE/O=Harbor Staging/OU=Platform/CN=Harbor Staging Root CA"
+
+Generate the Harbor private key and CSR:
+
+openssl genpkey \
+  -algorithm RSA \
+  -pkeyopt rsa_keygen_bits:4096 \
+  -out harbor-staging.key
+
+openssl req \
+  -new \
+  -sha256 \
+  -key harbor-staging.key \
+  -out harbor-staging.csr \
+  -subj "/C=AE/O=Harbor Staging/OU=Platform/CN=${HARBOR_FQDN}"
+
+Create SAN extensions:
+
+cat >harbor-staging-v3.ext <<EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=critical,CA:FALSE
+keyUsage=critical,digitalSignature,keyEncipherment
+extendedKeyUsage=serverAuth
+subjectAltName=DNS:${HARBOR_FQDN}
+EOF
+
+Sign the server certificate:
+
+openssl x509 \
+  -req \
+  -sha256 \
+  -days 365 \
+  -CA staging-root-ca.crt \
+  -CAkey staging-root-ca.key \
+  -CAcreateserial \
+  -in harbor-staging.csr \
+  -out harbor-staging.crt \
+  -extfile harbor-staging-v3.ext
+
+Validate:
+
+openssl verify \
+  -CAfile staging-root-ca.crt \
+  harbor-staging.crt
+
+openssl x509 \
+  -in harbor-staging.crt \
+  -noout \
+  -subject \
+  -issuer \
+  -dates \
+  -ext subjectAltName
+
+openssl x509 \
+  -in harbor-staging.crt \
+  -noout \
+  -checkhost "$HARBOR_FQDN"
+
+Install the certificate and key:
+
+install -m 0644 \
+  harbor-staging.crt \
+  /etc/harbor/certs/harbor-fullchain.crt
+
+install -m 0600 \
+  harbor-staging.key \
+  /etc/harbor/certs/harbor.key
+
+Trust the staging root CA at Ubuntu level:
+
+install -m 0644 \
+  staging-root-ca.crt \
+  /usr/local/share/ca-certificates/harbor-staging-root-ca.crt
+
+update-ca-certificates
+
+Trust the CA in Docker:
+
+install -d -m 0755 \
+  "/etc/docker/certs.d/${HARBOR_FQDN}"
+
+install -m 0644 \
+  staging-root-ca.crt \
+  "/etc/docker/certs.d/${HARBOR_FQDN}/ca.crt"
+
+systemctl restart docker
+
+For a standard server-authentication registry, Docker needs the CA root as ca.crt; do not put the Harbor server private key in the Docker client trust directory. Docker documents /etc/docker/certs.d/<registry-name>/ca.crt as the native Linux trust location. (Docker Docs)
+
+Phase 9 - Generate secure Harbor passwords
+
+install -d -m 0700 /root/harbor-secrets
+
+test -s /root/harbor-secrets/admin-password ||
+  openssl rand -hex 24 \
+    >/root/harbor-secrets/admin-password
+
+test -s /root/harbor-secrets/database-password ||
+  openssl rand -hex 24 \
+    >/root/harbor-secrets/database-password
+
+chmod 600 /root/harbor-secrets/*
+
+HARBOR_ADMIN_PASSWORD="$(
+  tr -d '\r\n' </root/harbor-secrets/admin-password
+)"
+
+HARBOR_DB_PASSWORD="$(
+  tr -d '\r\n' </root/harbor-secrets/database-password
+)"
+
+export HARBOR_ADMIN_PASSWORD
+export HARBOR_DB_PASSWORD
+
+Display the initial admin password once and store it in the approved password vault:
+
+cat /root/harbor-secrets/admin-password
+
+Do not send it by email or include it in project documentation.
+
+Phase 10 - Configure harbor.yml
+
+Harbor requires a non-localhost hostname, HTTPS certificate paths and a changed database password for production. It also supports strong TLS ciphers, persistent /data, log rotation, cache configuration and air-gap-specific Trivy settings. (Harbor)
+
+cd /opt/harbor
+
+cp harbor.yml.tmpl harbor.yml
+
+python3 <<'PY'
+import os
+from pathlib import Path
+import yaml
+
+path = Path("/opt/harbor/harbor.yml")
+cfg = yaml.safe_load(path.read_text())
+
+cfg["hostname"] = os.environ["HARBOR_FQDN"]
+
+cfg["https"]["port"] = 443
+cfg["https"]["certificate"] = "/etc/harbor/certs/harbor-fullchain.crt"
+cfg["https"]["private_key"] = "/etc/harbor/certs/harbor.key"
+cfg["https"]["strong_ssl_ciphers"] = True
+
+cfg["harbor_admin_password"] = os.environ["HARBOR_ADMIN_PASSWORD"]
+cfg["database"]["password"] = os.environ["HARBOR_DB_PASSWORD"]
+
+cfg["data_volume"] = "/data"
+
+cfg["log"]["level"] = "info"
+cfg["log"]["local"]["rotate_count"] = 10
+cfg["log"]["local"]["rotate_size"] = "50M"
+cfg["log"]["local"]["location"] = "/var/log/harbor"
+
+# Useful when many Kubernetes nodes pull simultaneously.
+cfg["cache"]["enabled"] = True
+cfg["cache"]["expire_hours"] = 24
+
+# Initial connected build. These are changed before entering the dark site
+# when Trivy is installed.
+cfg["trivy"]["skip_update"] = False
+cfg["trivy"]["skip_java_db_update"] = False
+cfg["trivy"]["offline_scan"] = False
+cfg["trivy"]["insecure"] = False
+
+# Do not retain any staging proxy configuration.
+cfg["proxy"]["http_proxy"] = None
+cfg["proxy"]["https_proxy"] = None
+cfg["proxy"]["no_proxy"] = None
+
+path.write_text(
+    yaml.safe_dump(cfg, sort_keys=False, default_flow_style=False)
+)
+PY
+
+chmod 600 /opt/harbor/harbor.yml
+
+Review the important settings without displaying passwords:
+
+grep -E \
+  '^(hostname|data_volume|https:|cache:|trivy:)|certificate:|private_key:|strong_ssl_ciphers|rotate_count|rotate_size|enabled:' \
+  /opt/harbor/harbor.yml
+
+Check that ports 80 and 443 are not already occupied:
+
+ss -lntp | grep -E ':(80|443)[[:space:]]' || true
+
+Prepare Harbor:
+
+cd /opt/harbor
+./prepare
+docker compose config --quiet
+
+Phase 11 - Install Harbor
+
+Recommended base installation without Trivy
+
+Use this when there is no established offline vulnerability-database refresh process:
+
+cd /opt/harbor
+./install.sh
+
+Installation with Trivy
+
+Use this instead when vulnerability scanning is mandatory and an offline Trivy DB update process will be maintained:
+
+cd /opt/harbor
+./install.sh --with-trivy
+
+Do not run both choices during the initial installation.
+
+Validate the containers:
+
+cd /opt/harbor
+
+docker compose ps
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+docker images --digests
+
+Verify persistent mounts:
+
+docker inspect registry \
+  --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}'
+
+findmnt /data
+du -sh /data/* 2>/dev/null | sort -h
+
+Phase 12 - Create a controlled systemd service
+
+cat >/etc/systemd/system/harbor.service <<'EOF'
+[Unit]
+Description=Harbor Container Registry
+Requires=docker.service
+After=docker.service network-online.target local-fs.target
+Wants=network-online.target
+RequiresMountsFor=/data
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/harbor
+ExecStartPre=/usr/bin/mountpoint -q /data
+ExecStartPre=/usr/bin/test -f /data/.harbor-data-volume
+ExecStartPre=/usr/bin/test -f /opt/harbor/docker-compose.yml
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose stop -t 120
+TimeoutStartSec=0
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemd-analyze verify /etc/systemd/system/harbor.service
+
+systemctl daemon-reload
+systemctl enable harbor
+systemctl start harbor
+
+systemctl status harbor --no-pager
+
+Phase 13 - Install the Harbor validation command
+
+Harbor exposes /api/v2.0/health without authentication and reports healthy only when all listed Harbor components are healthy. (GitHub)
+
+cat >/usr/local/sbin/validate-harbor <<'SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+FQDN="${1:?Usage: validate-harbor <fqdn> <ca-file>}"
+CA_FILE="${2:?Usage: validate-harbor <fqdn> <ca-file>}"
+
+fail() {
+  echo "FAIL: $*" >&2
+  exit 1
+}
+
+pass() {
+  echo "PASS: $*"
+}
+
+warn() {
+  echo "WARN: $*" >&2
+}
+
+[[ -r "$CA_FILE" ]] || fail "CA file cannot be read: $CA_FILE"
+
+RESOLVED_IP="$(
+  getent ahostsv4 "$FQDN" |
+    awk 'NR == 1 {print $1}'
+)"
+
+[[ -n "$RESOLVED_IP" ]] ||
+  fail "FQDN does not resolve: $FQDN"
+
+pass "$FQDN resolves to $RESOLVED_IP"
+
+mountpoint -q /data ||
+  fail "/data is not mounted"
+
+[[ -f /data/.harbor-data-volume ]] ||
+  fail "/data marker file is missing"
+
+pass "/data is mounted and marker exists"
+
+systemctl is-active --quiet docker ||
+  fail "Docker service is not active"
+
+pass "Docker service is active"
+
+cd /opt/harbor
+
+MISSING_SERVICES="$(
+  comm -23 \
+    <(docker compose config --services | sort -u) \
+    <(docker compose ps --status running --services | sort -u)
+)"
+
+[[ -z "$MISSING_SERVICES" ]] ||
+  fail "Harbor services not running: $MISSING_SERVICES"
+
+pass "All Harbor Compose services are running"
+
+HEALTH="$(
+  curl \
+    --silent \
+    --show-error \
+    --fail \
+    --connect-timeout 10 \
+    --max-time 30 \
+    --cacert "$CA_FILE" \
+    "https://${FQDN}/api/v2.0/health"
+)"
+
+echo "$HEALTH" | jq .
+
+echo "$HEALTH" |
+  jq -e '.status == "healthy"' >/dev/null ||
+  fail "Harbor API reports an unhealthy state"
+
+pass "Harbor health API reports healthy"
+
+REGISTRY_CODE="$(
+  curl \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --write-out '%{http_code}' \
+    --connect-timeout 10 \
+    --max-time 30 \
+    --cacert "$CA_FILE" \
+    "https://${FQDN}/v2/"
+)"
+
+[[ "$REGISTRY_CODE" == "200" || "$REGISTRY_CODE" == "401" ]] ||
+  fail "Unexpected registry API response: HTTP $REGISTRY_CODE"
+
+pass "Registry v2 endpoint responded with HTTP $REGISTRY_CODE"
+
+openssl s_client \
+  -connect "${FQDN}:443" \
+  -servername "$FQDN" \
+  -CAfile "$CA_FILE" \
+  -verify_return_error \
+  </dev/null >/dev/null 2>&1 ||
+  fail "TLS chain validation failed"
+
+pass "TLS chain validation succeeded"
+
+TEMP_CERT="$(mktemp)"
+trap 'rm -f "$TEMP_CERT"' EXIT
+
+openssl s_client \
+  -connect "${FQDN}:443" \
+  -servername "$FQDN" \
+  -showcerts \
+  </dev/null 2>/dev/null |
+  openssl x509 -outform PEM >"$TEMP_CERT"
+
+openssl x509 \
+  -in "$TEMP_CERT" \
+  -noout \
+  -checkhost "$FQDN" >/dev/null ||
+  fail "Certificate SAN does not match $FQDN"
+
+pass "Certificate SAN matches $FQDN"
+
+if openssl x509 \
+    -in "$TEMP_CERT" \
+    -noout \
+    -checkend 3888000 >/dev/null; then
+  pass "Certificate is valid for more than 45 days"
+else
+  warn "Certificate expires in fewer than 45 days"
+fi
+
+DATA_USAGE="$(
+  df -P /data |
+    awk 'NR == 2 {gsub("%", "", $5); print $5}'
+)"
+
+if (( DATA_USAGE >= 85 )); then
+  fail "/data utilization is ${DATA_USAGE}%"
+elif (( DATA_USAGE >= 75 )); then
+  warn "/data utilization is ${DATA_USAGE}%"
+else
+  pass "/data utilization is ${DATA_USAGE}%"
+fi
+
+echo
+echo "Harbor validation completed successfully."
+SCRIPT
+
+chmod 750 /usr/local/sbin/validate-harbor
+
+Run it against the staging CA:
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  /root/harbor-staging-ca/staging-root-ca.crt
+
+Phase 14 - Create a test project and perform push/pull testing
+
+Create a temporary API credential file so the admin password is not shown in the process list:
+
+ADMIN_PASSWORD="$(
+  tr -d '\r\n' </root/harbor-secrets/admin-password
+)"
+
+NETRC_FILE="$(mktemp)"
+chmod 600 "$NETRC_FILE"
+
+cat >"$NETRC_FILE" <<EOF
+machine ${HARBOR_FQDN}
+login admin
+password ${ADMIN_PASSWORD}
+EOF
+
+Create a private 10 GB test project:
+
+PROJECT="airgap-test"
+
+CREATE_CODE="$(
+  curl \
+    --silent \
+    --show-error \
+    --cacert /root/harbor-staging-ca/staging-root-ca.crt \
+    --netrc-file "$NETRC_FILE" \
+    --header 'Content-Type: application/json' \
+    --output /tmp/harbor-project-create.out \
+    --write-out '%{http_code}' \
+    --request POST \
+    "https://${HARBOR_FQDN}/api/v2.0/projects" \
+    --data '{
+      "project_name": "airgap-test",
+      "metadata": {
+        "public": "false"
+      },
+      "storage_limit": 10737418240
+    }'
+)"
+
+case "$CREATE_CODE" in
+  201)
+    echo "Project created successfully."
+    ;;
+  409)
+    echo "Project already exists."
+    ;;
+  *)
+    echo "Project creation failed with HTTP $CREATE_CODE"
+    cat /tmp/harbor-project-create.out
+    exit 1
+    ;;
+esac
+
+The Harbor API officially supports project creation through POST /api/v2.0/projects, including project metadata and an optional storage quota. (GitHub)
+
+Log in:
+
+printf '%s' "$ADMIN_PASSWORD" |
+  docker login \
+    "$HARBOR_FQDN" \
+    --username admin \
+    --password-stdin
+
+Pull, tag and push a test image:
+
+docker pull alpine:3.21
+
+docker tag \
+  alpine:3.21 \
+  "${HARBOR_FQDN}/${PROJECT}/alpine:3.21"
+
+docker push \
+  "${HARBOR_FQDN}/${PROJECT}/alpine:3.21"
+
+Remove the local copies and pull from Harbor:
+
+docker image rm \
+  "${HARBOR_FQDN}/${PROJECT}/alpine:3.21" \
+  alpine:3.21 || true
+
+docker pull \
+  "${HARBOR_FQDN}/${PROJECT}/alpine:3.21"
+
+docker run --rm \
+  "${HARBOR_FQDN}/${PROJECT}/alpine:3.21" \
+  cat /etc/alpine-release
+
+Record the digest for comparison after migration:
+
+docker image inspect \
+  --format '{{index .RepoDigests 0}}' \
+  "${HARBOR_FQDN}/${PROJECT}/alpine:3.21" |
+  tee /root/harbor-test-image-digest-before-migration.txt
+
+Validate through the Harbor API:
+
+curl \
+  --silent \
+  --show-error \
+  --fail \
+  --cacert /root/harbor-staging-ca/staging-root-ca.crt \
+  --netrc-file "$NETRC_FILE" \
+  "https://${HARBOR_FQDN}/api/v2.0/projects/${PROJECT}/repositories/alpine/artifacts?with_tag=true" |
+  jq .
+
+Remove the temporary credential:
+
+rm -f "$NETRC_FILE"
+unset ADMIN_PASSWORD
+docker logout "$HARBOR_FQDN"
+
+Phase 15 - Reboot and persistence validation
+
+reboot
+
+After reboot:
+
+sudo -i
+set -a
+source /root/harbor.env
+set +a
+
+findmnt /data
+systemctl status docker --no-pager
+systemctl status harbor --no-pager
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  /root/harbor-staging-ca/staging-root-ca.crt
+
+docker pull \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21"
+
+Test complete container recreation:
+
+cd /opt/harbor
+
+systemctl stop harbor
+docker compose down
+systemctl start harbor
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  /root/harbor-staging-ca/staging-root-ca.crt
+
+docker pull \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21"
+
+Phase 16 - Test Harbor without internet access
+
+Perform this test from the ESXi console, not from an SSH session.
+
+DEFAULT_ROUTE="$(ip route show default | head -1)"
+
+echo "Saved route: $DEFAULT_ROUTE"
+
+trap 'ip route add $DEFAULT_ROUTE 2>/dev/null || true' EXIT
+
+ip route del default
+
+Confirm internet is unavailable:
+
+curl \
+  --head \
+  --connect-timeout 5 \
+  --max-time 10 \
+  https://github.com &&
+  echo "ERROR: Internet is still reachable" ||
+  echo "PASS: Internet is unavailable"
+
+Restart Harbor while there is no internet:
+
+systemctl restart harbor
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  /root/harbor-staging-ca/staging-root-ca.crt
+
+Remove and pull the image again:
+
+docker image rm \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21" || true
+
+docker pull \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21"
+
+docker run --rm \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21" \
+  cat /etc/alpine-release
+
+Restore the default route:
+
+ip route add $DEFAULT_ROUTE
+trap - EXIT
+
+ip route
+ping -c 3 "$STAGE_GATEWAY"
+
+This confirms Harbor does not require external access for normal repository operations.
+
+Phase 17 - Trivy preparation for an air-gapped site
+
+Skip this section when ENABLE_TRIVY=false.
+
+Trivy periodically retrieves its vulnerability databases from external repositories. Harbor’s air-gap configuration requires skip_update, skip_java_db_update and offline_scan, but the databases then become stale unless they are refreshed through a controlled offline transfer. (Harbor)
+
+First, while internet is available, confirm the scanner is present:
+
+cd /opt/harbor
+
+docker compose ps
+docker compose logs --tail=200 trivy-adapter
+du -sh /data/trivy-adapter 2>/dev/null || true
+
+Trigger a scan of the test artifact:
+
+ADMIN_PASSWORD="$(
+  tr -d '\r\n' </root/harbor-secrets/admin-password
+)"
+
+NETRC_FILE="$(mktemp)"
+chmod 600 "$NETRC_FILE"
+
+cat >"$NETRC_FILE" <<EOF
+machine ${HARBOR_FQDN}
+login admin
+password ${ADMIN_PASSWORD}
+EOF
+
+curl \
+  --silent \
+  --show-error \
+  --cacert /root/harbor-staging-ca/staging-root-ca.crt \
+  --netrc-file "$NETRC_FILE" \
+  --output /dev/null \
+  --write-out 'Scan request HTTP %{http_code}\n' \
+  --request POST \
+  "https://${HARBOR_FQDN}/api/v2.0/projects/airgap-test/repositories/alpine/artifacts/3.21/scan"
+
+rm -f "$NETRC_FILE"
+unset ADMIN_PASSWORD
+
+Check the scanner database and logs:
+
+sleep 30
+
+docker compose logs \
+  --since=10m \
+  --tail=300 \
+  trivy-adapter
+
+du -sh /data/trivy-adapter 2>/dev/null || true
+
+Switch Trivy to air-gap mode:
+
+cd /opt/harbor
+
+python3 <<'PY'
+from pathlib import Path
+import yaml
+
+path = Path("/opt/harbor/harbor.yml")
+cfg = yaml.safe_load(path.read_text())
+
+cfg["trivy"]["skip_update"] = True
+cfg["trivy"]["skip_java_db_update"] = True
+cfg["trivy"]["offline_scan"] = True
+cfg["trivy"]["insecure"] = False
+
+path.write_text(
+    yaml.safe_dump(cfg, sort_keys=False, default_flow_style=False)
+)
+PY
+
+systemctl stop harbor
+./prepare
+docker compose down -v
+systemctl start harbor
+
+Validate again with the default route removed. A professional deployment must document how a refreshed Trivy DB will periodically be transferred into the dark site.
+
+Phase 18 - Check for internet proxy dependencies
+
+Before migration, ensure the Harbor and Docker services do not depend on an internet proxy:
+
+grep -RniE \
+  'http_proxy|https_proxy|HTTP_PROXY|HTTPS_PROXY|no_proxy|NO_PROXY' \
+  /etc/environment \
+  /etc/default/docker \
+  /etc/systemd/system/docker.service.d \
+  /opt/harbor/harbor.yml \
+  2>/dev/null || true
+
+systemctl show docker \
+  --property=Environment
+
+Also inspect the current shell:
+
+env | grep -i proxy || true
+
+Remove staging proxy settings before the final export unless the same proxy is available inside the dark site.
+
+Phase 19 - Create the pre-migration baseline
+
+BASELINE="/root/harbor-migration-baseline-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$BASELINE"
+
+date -Is >"$BASELINE/date.txt"
+hostnamectl >"$BASELINE/hostnamectl.txt"
+timedatectl >"$BASELINE/timedatectl.txt"
+
+ip -br address >"$BASELINE/ip-address.txt"
+ip route >"$BASELINE/ip-route.txt"
+resolvectl status >"$BASELINE/resolvectl.txt"
+
+lsblk -f >"$BASELINE/lsblk.txt"
+pvs >"$BASELINE/pvs.txt"
+vgs >"$BASELINE/vgs.txt"
+lvs >"$BASELINE/lvs.txt"
+
+findmnt /data >"$BASELINE/findmnt-data.txt"
+df -hT /data >"$BASELINE/df-data.txt"
+df -i /data >"$BASELINE/df-inodes.txt"
+du -sh /data/* >"$BASELINE/data-usage.txt" 2>/dev/null || true
+
+cd /opt/harbor
+
+docker compose ps >"$BASELINE/docker-compose-ps.txt"
+docker images --digests >"$BASELINE/docker-images.txt"
+docker version >"$BASELINE/docker-version.txt"
+docker compose version >"$BASELINE/docker-compose-version.txt"
+
+curl \
+  --silent \
+  --show-error \
+  --fail \
+  --cacert /root/harbor-staging-ca/staging-root-ca.crt \
+  "https://${HARBOR_FQDN}/api/v2.0/health" |
+  jq . >"$BASELINE/harbor-health.json"
+
+openssl x509 \
+  -in /etc/harbor/certs/harbor-fullchain.crt \
+  -noout \
+  -subject \
+  -issuer \
+  -dates \
+  -fingerprint \
+  -sha256 \
+  -ext subjectAltName \
+  >"$BASELINE/harbor-certificate.txt"
+
+sha256sum \
+  "/opt/installers/harbor-offline-installer-v${HARBOR_VERSION}.tgz" \
+  >"$BASELINE/harbor-installer-sha256.txt"
+
+cp -a \
+  /root/harbor-test-image-digest-before-migration.txt \
+  "$BASELINE/"
+
+Back up the configuration and secrets to the OS disk:
+
+tar \
+  --xattrs \
+  --acls \
+  --numeric-owner \
+  -czf "$BASELINE/harbor-configuration.tgz" \
+  /opt/harbor \
+  /etc/harbor \
+  /root/harbor-secrets \
+  /etc/fstab \
+  /etc/netplan \
+  /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg \
+  /etc/systemd/system/harbor.service \
+  /usr/local/sbin/configure-static-network \
+  /usr/local/sbin/validate-harbor
+
+sha256sum \
+  "$BASELINE/harbor-configuration.tgz" \
+  >"$BASELINE/harbor-configuration.sha256"
+
+ls -lh "$BASELINE"
+
+Disable unattended internet-based APT activity for the dark site:
+
+cat >/etc/apt/apt.conf.d/99-airgap-periodic <<'EOF'
+APT::Periodic::Enable "0";
+APT::Periodic::Update-Package-Lists "0";
+APT::Periodic::Unattended-Upgrade "0";
+EOF
+
+Phase 20 - Clean shutdown before copying VMDKs
+
+Disable automatic Harbor startup for the first AHV boot:
+
+systemctl disable harbor
+
+Stop Harbor and remove its containers cleanly. Persistent data remains in /data.
+
+systemctl stop harbor
+
+cd /opt/harbor
+docker compose down
+
+docker ps -a
+sync
+
+Stop Docker and containerd:
+
+systemctl stop docker.service docker.socket containerd.service
+sync
+
+Power off:
+
+poweroff
+
+ESXi migration rules
+
+Before copying:
+
+The VM must be fully powered off, not suspended.
+
+Consolidate or remove VMware snapshots.
+
+Copy/export both disks.
+
+For manually copied VMware disks, ensure the VMDK descriptor and its backing extent are both included.
+
+Do not copy only the OS disk.
+
+Preserve the original boot firmware: BIOS-to-BIOS or UEFI-to-UEFI.
+
+Keep the ESXi source VM powered off during AHV validation.
+
+Never run source and target simultaneously with the same FQDN and registry data.
+
+Keep the source VM as the rollback point until AHV acceptance is complete.
+
+An OVA export, approved VMDK import workflow or Nutanix Move is safer than copying datastore files from a running environment.
+
+Phase 21 - Create the AHV VM
+
+In Prism Central or Prism Element:
+
+Import the OS VMDK.
+
+Import the Harbor data VMDK.
+
+Create the AHV VM with the same:
+8 vCPU
+
+16 GB RAM
+
+UEFI or BIOS firmware
+
+Attach the OS disk first.
+
+Attach the Harbor data disk second.
+
+Use the approved AHV SCSI/VirtIO disk configuration.
+
+Add one network interface.
+
+Initially leave the NIC disconnected.
+
+Boot using the AHV console.
+
+Phase 22 - First AHV boot validation
+
+From the AHV console:
+
+sudo -i
+
+set -a
+source /root/harbor.env
+set +a
+
+Verify both disks and LVM:
+
+lsblk -e7 -o NAME,PATH,SIZE,TYPE,FSTYPE,MOUNTPOINTS,MODEL,SERIAL
+
+pvs
+vgs
+lvs
+
+vgchange -ay
+mount -a
+
+findmnt --verify --verbose
+findmnt /data
+df -hT /data
+df -i /data
+
+test -f /data/.harbor-data-volume &&
+  echo "PASS: Harbor data disk found" ||
+  echo "FAIL: Harbor data marker missing"
+
+Verify AHV VirtIO devices:
+
+lspci | grep -Ei 'virtio|ethernet|scsi'
+lsmod | grep -E '^virtio'
+
+Do not start Harbor when /data is absent or empty.
+
+Phase 23 - Change the IP address on AHV
+
+Identify the new AHV NIC:
+
+ip -br link
+ip -br address
+
+Example using ens3:
+
+configure-static-network \
+  ens3 \
+  "$PROD_CIDR" \
+  "$PROD_GATEWAY" \
+  "$PROD_DNS1" \
+  "$PROD_DNS2" \
+  "$DNS_SEARCH"
+
+netplan try --timeout 120
+
+After accepting:
+
+ip -br address
+ip route
+resolvectl status
+
+Temporarily map the Harbor FQDN to the AHV address:
+
+HOST_RE="${HARBOR_FQDN//./\\.}"
+sed -i "/${HOST_RE}/d" /etc/hosts
+
+printf '%s %s %s\n' \
+  "$PROD_IP" \
+  "$HARBOR_FQDN" \
+  "$HARBOR_SHORT" >> /etc/hosts
+
+getent ahostsv4 "$HARBOR_FQDN"
+
+Connect the AHV NIC and test:
+
+ping -c 3 "$PROD_GATEWAY"
+
+dig @"$PROD_DNS1" "$HARBOR_FQDN"
+dig @"$PROD_DNS1" -x "$PROD_IP"
+
+ip route get "$PROD_DNS1"
+
+For a standard 1500-byte network, test MTU:
+
+ping -M do -s 1472 -c 3 "$PROD_GATEWAY" || true
+
+An ICMP-blocking firewall can make this test inconclusive.
+
+Phase 24 - Configure the internal dark-site NTP servers
+
+Certificate and token validation depends on accurate time.
+
+cp -a \
+  /etc/chrony/chrony.conf \
+  "/etc/chrony/chrony.conf.backup.$(date +%Y%m%d-%H%M%S)"
+
+sed -ri \
+  '/^[[:space:]]*(pool|server)[[:space:]]+/d' \
+  /etc/chrony/chrony.conf
+
+cat >>/etc/chrony/chrony.conf <<EOF
+server ${PROD_NTP1} iburst
+server ${PROD_NTP2} iburst
+EOF
+
+systemctl restart chrony
+chronyc makestep
+
+chronyc tracking
+chronyc sources -v
+timedatectl
+timedatectl show -p NTPSynchronized --value
+
+Phase 25 - Switch from VMware Tools to the AHV guest agent
+
+systemctl disable --now open-vm-tools.service 2>/dev/null || true
+
+systemctl enable --now qemu-guest-agent.service
+
+systemctl status qemu-guest-agent.service --no-pager
+
+Verify there are no guest-agent errors:
+
+journalctl \
+  -u qemu-guest-agent \
+  -b \
+  --no-pager \
+  --tail=100
+
+Phase 26 - Update internal DNS
+
+Create or change the internal records:
+
+A record:
+harbor01.registry.example.com  ->  production AHV IP
+
+PTR record:
+production AHV IP  ->  harbor01.registry.example.com
+
+Lowering DNS TTL before migration is recommended when an existing production record is being changed.
+
+Validate from Harbor:
+
+dig +short "$HARBOR_FQDN"
+dig -x "$PROD_IP" +short
+getent ahostsv4 "$HARBOR_FQDN"
+
+After DNS reliably returns the production IP, remove the temporary /etc/hosts entry:
+
+HOST_RE="${HARBOR_FQDN//./\\.}"
+sed -i "/${HOST_RE}/d" /etc/hosts
+
+resolvectl flush-caches
+
+getent ahostsv4 "$HARBOR_FQDN"
+
+The returned address must be $PROD_IP.
+
+Phase 27 - Generate the enterprise CA CSR
+
+The enterprise certificate must contain:
+
+Subject CN: harbor01.registry.example.com
+SAN: DNS:harbor01.registry.example.com
+Extended Key Usage: Server Authentication
+Key Usage: Digital Signature, Key Encipherment
+
+Do not request an IP SAN unless clients are genuinely required to connect by IP. FQDN-only access makes future IP changes easier.
+
+Create the production private key:
+
+install -d -m 0700 /root/harbor-production-pki
+cd /root/harbor-production-pki
+umask 077
+
+openssl genpkey \
+  -algorithm RSA \
+  -pkeyopt rsa_keygen_bits:4096 \
+  -out harbor-production.key
+
+Create the CSR configuration. Replace the subject details with the customer’s approved values:
+
+cat >harbor-production-csr.cnf <<EOF
+[req]
+prompt = no
+distinguished_name = distinguished_name
+req_extensions = request_extensions
+
+[distinguished_name]
+C = AE
+ST = Abu Dhabi
+L = Abu Dhabi
+O = CUSTOMER-ORGANIZATION
+OU = Infrastructure
+CN = ${HARBOR_FQDN}
+
+[request_extensions]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @subject_alt_names
+
+[subject_alt_names]
+DNS.1 = ${HARBOR_FQDN}
+EOF
+
+Generate the CSR:
+
+openssl req \
+  -new \
+  -sha256 \
+  -key harbor-production.key \
+  -out harbor-production.csr \
+  -config harbor-production-csr.cnf
+
+Validate the CSR:
+
+openssl req \
+  -in harbor-production.csr \
+  -noout \
+  -subject \
+  -text |
+  sed -n \
+    '/Subject:/p;/Subject Alternative Name/,+1p;/Extended Key Usage/,+1p'
+
+Copy only this file to the enterprise CA team:
+
+/root/harbor-production-pki/harbor-production.csr
+
+Never copy harbor-production.key to the CA team.
+
+Request the following returned files:
+
+harbor-production.crt
+intermediate-chain.crt
+enterprise-root-ca.crt
+
+Phase 28 - Convert CA files when required
+
+For a DER-formatted .cer file:
+
+openssl x509 \
+  -inform DER \
+  -in harbor-production.cer \
+  -out harbor-production.crt
+
+For a PKCS#7 certificate chain:
+
+openssl pkcs7 \
+  -print_certs \
+  -in enterprise-chain.p7b \
+  -out intermediate-chain.crt
+
+Inspect every returned certificate:
+
+openssl x509 \
+  -in harbor-production.crt \
+  -noout \
+  -subject \
+  -issuer \
+  -dates \
+  -ext subjectAltName
+
+openssl x509 \
+  -in enterprise-root-ca.crt \
+  -noout \
+  -subject \
+  -issuer \
+  -dates
+
+Phase 29 - Install the enterprise CA-signed certificate
+
+Assume the files have been placed in:
+
+/root/ca-return/harbor-production.crt
+/root/ca-return/intermediate-chain.crt
+/root/ca-return/enterprise-root-ca.crt
+
+Set variables:
+
+LEAF_CERT="/root/ca-return/harbor-production.crt"
+INTERMEDIATE_CHAIN="/root/ca-return/intermediate-chain.crt"
+ROOT_CA="/root/ca-return/enterprise-root-ca.crt"
+PRODUCTION_KEY="/root/harbor-production-pki/harbor-production.key"
+
+Validate the chain:
+
+openssl verify \
+  -CAfile "$ROOT_CA" \
+  -untrusted "$INTERMEDIATE_CHAIN" \
+  "$LEAF_CERT"
+
+Validate the hostname:
+
+openssl x509 \
+  -in "$LEAF_CERT" \
+  -noout \
+  -checkhost "$HARBOR_FQDN"
+
+Validate that the certificate matches the private key:
+
+CERT_PUBLIC_KEY_HASH="$(
+  openssl x509 \
+    -in "$LEAF_CERT" \
+    -pubkey \
+    -noout |
+  openssl pkey \
+    -pubin \
+    -outform DER |
+  sha256sum |
+  awk '{print $1}'
+)"
+
+PRIVATE_KEY_HASH="$(
+  openssl pkey \
+    -in "$PRODUCTION_KEY" \
+    -pubout \
+    -outform DER |
+  sha256sum |
+  awk '{print $1}'
+)"
+
+echo "Certificate public key: $CERT_PUBLIC_KEY_HASH"
+echo "Private key public key:  $PRIVATE_KEY_HASH"
+
+test "$CERT_PUBLIC_KEY_HASH" = "$PRIVATE_KEY_HASH" || {
+  echo "Certificate and private key do not match."
+  exit 1
+}
+
+Back up the staging certificate:
+
+CERT_BACKUP="/etc/harbor/certs.backup.$(date +%Y%m%d-%H%M%S)"
+cp -a /etc/harbor/certs "$CERT_BACKUP"
+
+echo "Certificate backup: $CERT_BACKUP"
+
+Build the server full chain. Do not normally include the root CA in the server chain.
+
+cat \
+  "$LEAF_CERT" \
+  "$INTERMEDIATE_CHAIN" \
+  >/etc/harbor/certs/harbor-fullchain.crt
+
+install -m 0600 \
+  "$PRODUCTION_KEY" \
+  /etc/harbor/certs/harbor.key
+
+chmod 644 /etc/harbor/certs/harbor-fullchain.crt
+chown root:root \
+  /etc/harbor/certs/harbor-fullchain.crt \
+  /etc/harbor/certs/harbor.key
+
+Install the enterprise root CA in Ubuntu:
+
+install -m 0644 \
+  "$ROOT_CA" \
+  /usr/local/share/ca-certificates/enterprise-harbor-root-ca.crt
+
+update-ca-certificates
+
+Replace Docker’s staging CA with the enterprise root:
+
+install -d -m 0755 \
+  "/etc/docker/certs.d/${HARBOR_FQDN}"
+
+install -m 0644 \
+  "$ROOT_CA" \
+  "/etc/docker/certs.d/${HARBOR_FQDN}/ca.crt"
+
+Regenerate and start Harbor:
+
+systemctl enable --now docker
+
+cd /opt/harbor
+./prepare
+docker compose config --quiet
+
+docker compose down -v
+
+systemctl restart docker
+
+systemctl enable harbor
+systemctl start harbor
+
+Harbor’s documented certificate reconfiguration process is to run prepare, remove the existing Compose deployment and restart it; the persistent repository data remains in the filesystem. (Harbor)
+
+Validate using the enterprise CA:
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  "$ROOT_CA"
+
+After successful validation, remove staging CA trust:
+
+rm -f \
+  /usr/local/share/ca-certificates/harbor-staging-root-ca.crt
+
+update-ca-certificates --fresh
+systemctl restart docker
+systemctl restart harbor
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  "$ROOT_CA"
+
+Keep /root/harbor-staging-ca only until rollback acceptance is complete. Remove it afterwards according to the customer’s cryptographic key-handling policy.
+
+Phase 30 - Final image integrity test
+
+Log in temporarily:
+
+ADMIN_PASSWORD="$(
+  tr -d '\r\n' </root/harbor-secrets/admin-password
+)"
+
+printf '%s' "$ADMIN_PASSWORD" |
+  docker login \
+    "$HARBOR_FQDN" \
+    --username admin \
+    --password-stdin
+
+Pull the image from the migrated Harbor:
+
+docker image rm \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21" || true
+
+docker pull \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21"
+
+Record and compare the digest:
+
+docker image inspect \
+  --format '{{index .RepoDigests 0}}' \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21" |
+  tee /root/harbor-test-image-digest-after-migration.txt
+
+echo "Before migration:"
+cat /root/harbor-test-image-digest-before-migration.txt
+
+echo "After migration:"
+cat /root/harbor-test-image-digest-after-migration.txt
+
+diff \
+  /root/harbor-test-image-digest-before-migration.txt \
+  /root/harbor-test-image-digest-after-migration.txt &&
+  echo "PASS: Image digest is unchanged"
+
+Test execution:
+
+docker run --rm \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21" \
+  cat /etc/alpine-release
+
+docker logout "$HARBOR_FQDN"
+unset ADMIN_PASSWORD
+
+Phase 31 - Verify the enterprise TLS chain externally
+
+openssl s_client \
+  -connect "${HARBOR_FQDN}:443" \
+  -servername "$HARBOR_FQDN" \
+  -CAfile "$ROOT_CA" \
+  -verify_return_error \
+  -showcerts \
+  </dev/null
+
+Show the certificate being served:
+
+openssl s_client \
+  -connect "${HARBOR_FQDN}:443" \
+  -servername "$HARBOR_FQDN" \
+  </dev/null 2>/dev/null |
+openssl x509 \
+  -noout \
+  -subject \
+  -issuer \
+  -serial \
+  -dates \
+  -fingerprint \
+  -sha256 \
+  -ext subjectAltName
+
+Check expiry for the next 45 days:
+
+openssl x509 \
+  -in /etc/harbor/certs/harbor-fullchain.crt \
+  -noout \
+  -checkend 3888000 &&
+  echo "PASS: Certificate valid for more than 45 days" ||
+  echo "WARNING: Certificate expires in fewer than 45 days"
+
+Phase 32 - Test from a Docker client
+
+Copy only the enterprise root CA to the client.
+
+HARBOR_FQDN="harbor01.registry.example.com"
+ROOT_CA_FILE="/tmp/enterprise-root-ca.crt"
+
+sudo install -m 0644 \
+  "$ROOT_CA_FILE" \
+  /usr/local/share/ca-certificates/enterprise-harbor-root-ca.crt
+
+sudo update-ca-certificates
+
+sudo install -d -m 0755 \
+  "/etc/docker/certs.d/${HARBOR_FQDN}"
+
+sudo install -m 0644 \
+  "$ROOT_CA_FILE" \
+  "/etc/docker/certs.d/${HARBOR_FQDN}/ca.crt"
+
+sudo systemctl restart docker
+
+Validate TLS:
+
+curl -fsS \
+  "https://${HARBOR_FQDN}/api/v2.0/health" |
+  jq .
+
+Log in using a Harbor robot account:
+
+read -rp "Robot username: " ROBOT_USER
+read -rsp "Robot secret: " ROBOT_SECRET
+echo
+
+printf '%s' "$ROBOT_SECRET" |
+  docker login \
+    "$HARBOR_FQDN" \
+    --username "$ROBOT_USER" \
+    --password-stdin
+
+unset ROBOT_SECRET
+
+Pull:
+
+docker pull \
+  "${HARBOR_FQDN}/airgap-test/alpine:3.21"
+
+Use a project-scoped robot account rather than admin for cluster or automation access. Harbor robot credentials are intended for OCI clients and API automation, and the generated secret must be saved when the account is created. (Harbor)
+
+Phase 33 - Kubernetes pull validation
+
+Before this test, the enterprise root CA must be trusted by the Kubernetes node container runtime through the supported NKP, VKS or upstream Kubernetes configuration method. For managed platforms, avoid manually modifying each node because machine replacement can remove the change.
+
+Create a test namespace:
+
+kubectl create namespace harbor-validation
+
+Create a Docker configuration without exposing the robot secret on a kubectl command line:
+
+HARBOR_FQDN="harbor01.registry.example.com"
+
+read -rp "Robot username: " ROBOT_USER
+read -rsp "Robot secret: " ROBOT_SECRET
+echo
+
+AUTH="$(
+  printf '%s' "${ROBOT_USER}:${ROBOT_SECRET}" |
+  base64 -w0
+)"
+
+DOCKER_CONFIG_FILE="$(mktemp)"
+chmod 600 "$DOCKER_CONFIG_FILE"
+
+jq -n \
+  --arg registry "$HARBOR_FQDN" \
+  --arg auth "$AUTH" \
+  '{
+    auths: {
+      ($registry): {
+        auth: $auth
+      }
+    }
+  }' >"$DOCKER_CONFIG_FILE"
+
+unset ROBOT_SECRET AUTH
+
+Create the Kubernetes secret:
+
+kubectl \
+  -n harbor-validation \
+  create secret generic harbor-pull-secret \
+  --type=kubernetes.io/dockerconfigjson \
+  --from-file=.dockerconfigjson="$DOCKER_CONFIG_FILE"
+
+rm -f "$DOCKER_CONFIG_FILE"
+
+Create the test pod:
+
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: harbor-pull-test
+  namespace: harbor-validation
+spec:
+  restartPolicy: Never
+  imagePullSecrets:
+    - name: harbor-pull-secret
+  containers:
+    - name: test
+      image: ${HARBOR_FQDN}/airgap-test/alpine:3.21
+      command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Image successfully pulled from Harbor"
+          cat /etc/alpine-release
+EOF
+
+Validate:
+
+kubectl \
+  -n harbor-validation \
+  wait \
+  --for=jsonpath='{.status.phase}'=Succeeded \
+  pod/harbor-pull-test \
+  --timeout=180s
+
+kubectl \
+  -n harbor-validation \
+  logs harbor-pull-test
+
+kubectl \
+  -n harbor-validation \
+  describe pod harbor-pull-test
+
+Clean up:
+
+kubectl delete namespace harbor-validation
+
+Phase 34 - Network security requirements
+
+Permit only the following through the upstream firewall, Prism Flow or approved network security system:
+
+Source
+Destination
+Port
+Purpose
+Management subnet
+Harbor VM
+TCP 22
+SSH administration
+Kubernetes nodes and approved clients
+Harbor VM
+TCP 443
+Harbor UI, API, push and pull
+Approved clients
+Harbor VM
+TCP 80
+Optional HTTP-to-HTTPS redirect; preferably block
+Harbor VM
+Internal DNS
+UDP/TCP 53
+Name resolution
+Harbor VM
+Internal NTP
+UDP 123
+Time synchronization
+Harbor VM
+Internal SMTP
+Customer-specific
+Notifications, when configured
+Harbor VM
+LDAP/LDAPS
+TCP 389/636
+Authentication, when configured
+Monitoring systems
+Harbor metrics
+Customer-specific
+Only when metrics are enabled
+
+Do not rely exclusively on UFW for Docker-published ports. Docker warns that published container traffic can bypass normal UFW rules and recommends controlling it through the supported Docker firewall path or upstream controls. (Docker Docs)
+
+Check listening ports:
+
+ss -lntp
+
+Expected externally relevant ports:
+
+22/tcp
+443/tcp
+80/tcp - only when redirect is permitted
+
+Phase 35 - Storage capacity controls
+
+With a 150 GB /data disk:
+
+Keep at least 20% free.
+
+Generate warnings at 75%.
+
+Treat 85% as critical.
+
+Set project quotas.
+
+Configure tag retention.
+
+Schedule garbage collection after retention deletes old artifacts.
+
+Never manually delete registry blob files under /data/registry.
+
+Plan disk expansion before reaching the critical threshold.
+
+Check usage:
+
+df -hT /data
+df -i /data
+
+du -xhd1 /data |
+  sort -h
+
+docker system df
+
+Future data-disk expansion
+
+After increasing the second virtual disk in AHV:
+
+lsblk
+
+Assuming the disk remains /dev/sdb:
+
+growpart /dev/sdb 1
+pvresize /dev/sdb1
+
+pvs
+vgs
+
+lvextend \
+  -r \
+  -l +100%FREE \
+  /dev/vg_harbor/lv_data
+
+df -hT /data
+
+Adjust /dev/sdb to the actual AHV device name.
+
+Phase 36 - Application-consistent backup
+
+A snapshot on the same AHV cluster is not the only backup. Maintain an external backup copy according to the required RPO and RTO.
+
+Assuming /mnt/harbor-backup is an approved external NFS or backup target:
+
+mountpoint -q /mnt/harbor-backup || {
+  echo "External backup target is not mounted."
+  exit 1
+}
+
+Create a cold, application-consistent backup:
+
+BACKUP_DIR="/mnt/harbor-backup/$(hostname -s)-$(date +%Y%m%d-%H%M%S)"
+
+mkdir -p "$BACKUP_DIR"
+
+systemctl stop harbor
+
+trap 'systemctl start harbor' EXIT
+
+rsync \
+  -aHAX \
+  --numeric-ids \
+  --info=progress2 \
+  /data/ \
+  "$BACKUP_DIR/data/"
+
+tar \
+  --xattrs \
+  --acls \
+  --numeric-owner \
+  -czf "$BACKUP_DIR/configuration.tgz" \
+  /opt/harbor \
+  /etc/harbor \
+  /root/harbor-secrets \
+  /etc/fstab \
+  /etc/netplan \
+  /etc/systemd/system/harbor.service
+
+sync
+
+sha256sum \
+  "$BACKUP_DIR/configuration.tgz" \
+  >"$BACKUP_DIR/SHA256SUMS"
+
+systemctl start harbor
+trap - EXIT
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  /root/ca-return/enterprise-root-ca.crt
+
+find "$BACKUP_DIR" -maxdepth 2 -type f -ls
+
+Periodically restore this backup into an isolated test VM. A backup that has never been restored is not fully validated.
+
+Phase 37 - SSH hardening
+
+Only perform this after confirming that SSH public-key access works from a second terminal.
+
+cat >/etc/ssh/sshd_config.d/99-harbor-hardening.conf <<'EOF'
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+X11Forwarding no
+AllowTcpForwarding no
+EOF
+
+sshd -t
+systemctl reload ssh
+
+Do not add general users to the docker group. Docker group access effectively provides root-level control of the host.
+
+Final acceptance checklist
+
+The installation is ready for handover only when all of these pass:
+
+Validation
+Required result
+Permanent FQDN
+Resolves to the AHV production IP
+Reverse DNS
+Resolves production IP to Harbor FQDN
+Time
+Internal NTP synchronized
+/data mount
+Mounted from the second disk by filesystem UUID
+Harbor API
+/api/v2.0/health reports healthy
+Compose services
+All expected services running
+Certificate SAN
+Matches the permanent FQDN
+Certificate chain
+Validates against enterprise root CA
+Certificate expiry
+Monitored with at least a 45-day warning
+Docker push
+Successful using robot credentials
+Docker pull
+Successful from an independent client
+Kubernetes pull
+Successful from a test pod
+Image integrity
+Digest before and after migration is identical
+Reboot
+Harbor returns automatically after reboot
+Internet isolation
+Harbor restarts and serves images without internet
+Storage threshold
+/data below 75%
+Backup
+External backup completed and checksum recorded
+Rollback
+Original ESXi VM remains powered off and available until acceptance
+HA status
+Documented as single-node and single point of failure
+
+Troubleshooting command set
+
+Overall status
+
+systemctl status docker --no-pager
+systemctl status harbor --no-pager
+systemctl status chrony --no-pager
+systemctl status qemu-guest-agent --no-pager
+
+cd /opt/harbor
+docker compose ps
+docker ps -a
+
+Harbor logs
+
+cd /opt/harbor
+
+docker compose logs \
+  --since=30m \
+  --tail=300
+
+docker compose logs \
+  --since=30m \
+  --tail=300 \
+  proxy \
+  core \
+  registry \
+  postgresql \
+  jobservice
+
+System logs
+
+journalctl \
+  -u docker \
+  -u harbor \
+  -b \
+  --no-pager \
+  --tail=500
+
+dmesg -T |
+  tail -n 200
+
+Storage
+
+lsblk -f
+pvs
+vgs
+lvs
+
+findmnt /data
+df -hT /data
+df -i /data
+
+du -xhd1 /data |
+  sort -h
+
+docker inspect registry \
+  --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}'
+
+When /data is missing:
+
+systemctl stop harbor
+
+vgchange -ay
+mount -a
+
+findmnt --verify --verbose
+findmnt /data
+
+Do not start Harbor until the correct data volume is mounted.
+
+DNS and routing
+
+getent ahostsv4 "$HARBOR_FQDN"
+dig "$HARBOR_FQDN"
+dig -x "$PROD_IP"
+
+ip -br address
+ip route
+ip route get "$PROD_DNS1"
+
+resolvectl status
+
+TLS
+
+openssl s_client \
+  -connect "${HARBOR_FQDN}:443" \
+  -servername "$HARBOR_FQDN" \
+  -showcerts \
+  -verify_return_error \
+  </dev/null
+
+openssl x509 \
+  -in /etc/harbor/certs/harbor-fullchain.crt \
+  -noout \
+  -subject \
+  -issuer \
+  -dates \
+  -ext subjectAltName
+
+Typical TLS failures:
+
+x509: certificate signed by unknown authority
+
+The client or container runtime does not trust the enterprise root CA.
+
+x509: certificate is valid for another-name, not harbor01...
+
+The certificate SAN does not contain the Harbor FQDN. Reissue the server certificate.
+
+certificate has expired or is not yet valid
+
+Check the certificate dates and NTP synchronization.
+
+API and registry
+
+curl -v \
+  --cacert /root/ca-return/enterprise-root-ca.crt \
+  "https://${HARBOR_FQDN}/api/v2.0/health"
+
+curl -v \
+  --cacert /root/ca-return/enterprise-root-ca.crt \
+  "https://${HARBOR_FQDN}/v2/"
+
+An HTTP 401 Unauthorized response from /v2/ is normally valid because it confirms that the registry endpoint is reachable and authentication is enforced.
+
+Restart sequence
+
+cd /opt/harbor
+
+systemctl stop harbor
+./prepare
+docker compose down
+systemctl restart docker
+systemctl start harbor
+
+validate-harbor \
+  "$HARBOR_FQDN" \
+  /root/ca-return/enterprise-root-ca.crt
+
+This design covers the missing professional considerations: stable registry identity, cross-hypervisor disk portability, clean migration consistency, enterprise PKI, client trust, internal DNS/NTP, offline behavior, container-runtime testing, quotas, capacity alarms, backup, certificate renewal, package preservation, robot accounts, firewall handling and rollback control.
+
+Sources:
+
+Harbor docs | Configure the Harbor YML File
+
+Install Docker Engine on Ubuntu | Docker Docs
+
+https://raw.githubusercontent.com/goharbor/harbor/v2.15.2/api/v2.0/swagger.yaml
+
+
+
+Powered by ChatGPT Exporter (https://www.chatgptexporter.com)
